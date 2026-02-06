@@ -379,11 +379,18 @@ Visual (seeded bijection for MCC):
 
 ```mermaid
 flowchart LR
-    A[Original MCC: 5411] -->|pi(mcc) using CAT_SEED| B[Masked MCC: 7823]
-    C[Permutation pi: bijection over 0..9999] --> B
+    A["Original MCC (m)"] --> B["Permutation pi (seeded by CAT_SEED)"]
+    B --> C["Masked MCC (m')"]
 ```
 
+Example (illustrative; actual values depend on CAT_SEED):
+- `m = 5411` → `m' = 7823`
+
 ![MCC permutation (sample)](docs/assets/mcc_permutation_scatter.png)
+
+How to read the scatterplot: each dot is a one-to-one mapping from original MCC (x-axis)
+to masked MCC (y-axis). A perfect diagonal would mean no masking; the scattered pattern
+shows a permutation while preserving a bijection (no collisions).
 
 ## 📁 Project structure
 
