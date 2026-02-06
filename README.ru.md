@@ -373,6 +373,23 @@ $$
 - **MCC**: биективная перестановка 0-9999 по seed
 - **Channel**: фиксированный маппинг (POS→CH_ALPHA, etc.)
 
+Визуализация (seeded bijection для MCC):
+
+```mermaid
+flowchart LR
+    A["Original MCC (m)"] --> B["Permutation pi (seeded by CAT_SEED)"]
+    B --> C["Masked MCC (m')"]
+```
+
+Пример (иллюстративно; реальные значения зависят от CAT_SEED):
+- `m = 5411` → `m' = 7823`
+
+![MCC permutation (sample)](docs/assets/mcc_permutation_scatter.png)
+
+Как читать scatterplot: каждая точка — это взаимно-однозначное отображение
+исходного MCC (ось X) в замаскированный MCC (ось Y). Идеальная диагональ означала бы
+отсутствие маскирования; «разброс» показывает перестановку при сохранении биекции.
+
 ## 📁 Структура проекта
 
 ```
