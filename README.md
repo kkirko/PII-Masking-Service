@@ -375,6 +375,16 @@ $$
 - **MCC**: bijective permutation 0-9999 by seed
 - **Channel**: fixed mapping (POS→CH_ALPHA, etc.)
 
+Visual (seeded bijection for MCC):
+
+```mermaid
+flowchart LR
+    A[Original MCC: 5411] -->|π(mcc) using CAT_SEED| B[Masked MCC: 7823]
+    C[Permutation π: bijection over 0..9999] --> B
+```
+
+![MCC permutation (sample)](docs/assets/mcc_permutation_scatter.png)
+
 ## 📁 Project structure
 
 ```
