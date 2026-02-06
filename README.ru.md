@@ -391,6 +391,25 @@ flowchart LR
 
 - **Channel**: фиксированный маппинг (POS→CH_ALPHA, etc.)
 
+Визуализация (фиксированный маппинг channel):
+
+```mermaid
+flowchart LR
+    POS[POS] --> CHA[CH_ALPHA]
+    ECOM[ECOM] --> CHB[CH_BETA]
+    ATM[ATM] --> CHG[CH_GAMMA]
+    MOB[MOB] --> CHD[CH_DELTA]
+```
+
+Таблица маппинга:
+
+| Original | Masked |
+|----------|--------|
+| POS | CH_ALPHA |
+| ECOM | CH_BETA |
+| ATM | CH_GAMMA |
+| MOB | CH_DELTA |
+
 ## 📁 Структура проекта
 
 ```

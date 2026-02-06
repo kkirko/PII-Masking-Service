@@ -393,6 +393,25 @@ shows a permutation while preserving a bijection (no collisions).
 
 - **Channel**: fixed mapping (POS→CH_ALPHA, etc.)
 
+Visual (fixed mapping for channel):
+
+```mermaid
+flowchart LR
+    POS[POS] --> CHA[CH_ALPHA]
+    ECOM[ECOM] --> CHB[CH_BETA]
+    ATM[ATM] --> CHG[CH_GAMMA]
+    MOB[MOB] --> CHD[CH_DELTA]
+```
+
+Mapping table:
+
+| Original | Masked |
+|----------|--------|
+| POS | CH_ALPHA |
+| ECOM | CH_BETA |
+| ATM | CH_GAMMA |
+| MOB | CH_DELTA |
+
 ## 📁 Project structure
 
 ```
