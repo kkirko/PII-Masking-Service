@@ -28,6 +28,100 @@ Additionally:
 - ✅ Policy enforcement before egress to Cloud/LLM
 - ✅ LLM explainability flow with ENC tokens `[[ENC|v1|field|ciphertext]]`
 
+
+## 🔐 Security
+
+### PII Encryption
+- Algorithm: **AES-256-SIV** (Synthetic IV)
+- Deterministic AEAD — same input produces same output
+- Domain separation: same value in different fields produces different ciphertext
+- Associated Data: `scb-demo|v1|{field_name}`
+
+### ENC tokens for LLM
+LLM never receives plaintext data. Instead, the request uses tokens:
+
+```
+[[ENC|v1|<field_name>|<base64url_ciphertext>]]
+```
+
+- Tokens are generated on-prem from real values (strings/numbers)
+- LLM must copy tokens as-is
+- After response, `unmask_text()` restores readable text
+
+### Numeric fields
+- Diagonal matrix: `x_masked = x × scale_factor`
+- Scale factors are stored as service secrets
+- Reversible: `x = x_masked / scale_factor`
+
+Example (diagonal matrix multiplication):
+
+$$
+\mathbf{x} =
+\begin{bmatrix}
+275.50 \\
+18350.75 \\
+50000.00
+\end{bmatrix},
+\quad
+D =
+\begin{bmatrix}
+1.37 & 0 & 0 \\
+0 & 0.83 & 0 \\
+0 & 0 & 1.11
+\end{bmatrix}
+$$
+
+$$
+\mathbf{x}' = D\mathbf{x} =
+\begin{bmatrix}
+377.435 \\
+15231.1225 \\
+55500.00
+\end{bmatrix}
+$$
+
+### Categorical fields
+- **MCC**: bijective permutation 0-9999 by seed
+
+Visual (seeded bijection for MCC):
+
+```mermaid
+flowchart LR
+    A["Original MCC (m)"] --> B["Permutation pi (seeded by CAT_SEED)"]
+    B --> C["Masked MCC (m')"]
+```
+
+Example (illustrative; actual values depend on CAT_SEED):
+- `m = 5411` → `m' = 7823`
+
+![MCC permutation (sample)](docs/assets/mcc_permutation_scatter.png)
+
+How to read the scatterplot: each dot is a one-to-one mapping from original MCC (x-axis)
+to masked MCC (y-axis). A perfect diagonal would mean no masking; the scattered pattern
+shows a permutation while preserving a bijection (no collisions).
+
+- **Channel**: fixed mapping (POS→CH_ALPHA, etc.)
+
+Visual (fixed mapping for channel):
+
+```mermaid
+flowchart LR
+    POS[POS] --> CHA[CH_ALPHA]
+    ECOM[ECOM] --> CHB[CH_BETA]
+    ATM[ATM] --> CHG[CH_GAMMA]
+    MOB[MOB] --> CHD[CH_DELTA]
+```
+
+Mapping table:
+
+| Original | Masked |
+|----------|--------|
+| POS | CH_ALPHA |
+| ECOM | CH_BETA |
+| ATM | CH_GAMMA |
+| MOB | CH_DELTA |
+
+
 ## 🔁 Sequence Diagram (End-to-End)
 
 ```mermaid
@@ -79,20 +173,9 @@ Summary:
 - Step 5–7: Tokenize PII for LLM, masked request/response.
 - Step 8: On-prem de-mask and RM output.
 
-## 📚 Documentation
-
-- RU: `docs/PII_Masking_Service_Design_ru.md`
-- EN: `docs/PII_Masking_Service_Design_en.md`
-
-Generate documentation assets:
-```bash
-pip install -r docs/requirements-docs.txt
-python docs/generate_assets.py
-```
-
 ## 🚀 Quick Start
 
-### Local (3 minutes)
+### Local
 
 ```bash
 # 1. Clone/create directory
@@ -320,98 +403,6 @@ Environment variables (see `.env.example`):
 python -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(64)).decode())"
 ```
 
-## 🔐 Security
-
-### PII Encryption
-- Algorithm: **AES-256-SIV** (Synthetic IV)
-- Deterministic AEAD — same input produces same output
-- Domain separation: same value in different fields produces different ciphertext
-- Associated Data: `scb-demo|v1|{field_name}`
-
-### ENC tokens for LLM
-LLM never receives plaintext data. Instead, the request uses tokens:
-
-```
-[[ENC|v1|<field_name>|<base64url_ciphertext>]]
-```
-
-- Tokens are generated on-prem from real values (strings/numbers)
-- LLM must copy tokens as-is
-- After response, `unmask_text()` restores readable text
-
-### Numeric fields
-- Diagonal matrix: `x_masked = x × scale_factor`
-- Scale factors are stored as service secrets
-- Reversible: `x = x_masked / scale_factor`
-
-Example (diagonal matrix multiplication):
-
-$$
-\mathbf{x} =
-\begin{bmatrix}
-275.50 \\
-18350.75 \\
-50000.00
-\end{bmatrix},
-\quad
-D =
-\begin{bmatrix}
-1.37 & 0 & 0 \\
-0 & 0.83 & 0 \\
-0 & 0 & 1.11
-\end{bmatrix}
-$$
-
-$$
-\mathbf{x}' = D\mathbf{x} =
-\begin{bmatrix}
-377.435 \\
-15231.1225 \\
-55500.00
-\end{bmatrix}
-$$
-
-### Categorical fields
-- **MCC**: bijective permutation 0-9999 by seed
-
-Visual (seeded bijection for MCC):
-
-```mermaid
-flowchart LR
-    A["Original MCC (m)"] --> B["Permutation pi (seeded by CAT_SEED)"]
-    B --> C["Masked MCC (m')"]
-```
-
-Example (illustrative; actual values depend on CAT_SEED):
-- `m = 5411` → `m' = 7823`
-
-![MCC permutation (sample)](docs/assets/mcc_permutation_scatter.png)
-
-How to read the scatterplot: each dot is a one-to-one mapping from original MCC (x-axis)
-to masked MCC (y-axis). A perfect diagonal would mean no masking; the scattered pattern
-shows a permutation while preserving a bijection (no collisions).
-
-- **Channel**: fixed mapping (POS→CH_ALPHA, etc.)
-
-Visual (fixed mapping for channel):
-
-```mermaid
-flowchart LR
-    POS[POS] --> CHA[CH_ALPHA]
-    ECOM[ECOM] --> CHB[CH_BETA]
-    ATM[ATM] --> CHG[CH_GAMMA]
-    MOB[MOB] --> CHD[CH_DELTA]
-```
-
-Mapping table:
-
-| Original | Masked |
-|----------|--------|
-| POS | CH_ALPHA |
-| ECOM | CH_BETA |
-| ATM | CH_GAMMA |
-| MOB | CH_DELTA |
-
 ## 📁 Project structure
 
 ```
@@ -465,6 +456,19 @@ open http://localhost:8000/docs
 - [ ] Repeat request to show determinism
 - [ ] Show `/v1/unmask/transaction` — restoration
 - [ ] Run `demo_client.py` for automated demo
+
+
+## 📚 Documentation
+
+- RU: `docs/PII_Masking_Service_Design_ru.md`
+- EN: `docs/PII_Masking_Service_Design_en.md`
+
+Generate documentation assets:
+```bash
+pip install -r docs/requirements-docs.txt
+python docs/generate_assets.py
+```
+
 
 ## 📜 License
 

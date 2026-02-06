@@ -26,6 +26,100 @@
 - ✅ Policy enforcement перед egress в Cloud/LLM
 - ✅ LLM explainability flow с ENC токенами `[[ENC|v1|field|ciphertext]]`
 
+
+## 🔐 Безопасность
+
+### Шифрование PII
+- Алгоритм: **AES-256-SIV** (Synthetic IV)
+- Детерминированный AEAD — одинаковый вход → одинаковый выход
+- Domain separation: разные поля с одинаковым значением дают разный ciphertext
+- Associated Data: `scb-demo|v1|{field_name}`
+
+### ENC токены для LLM
+LLM не получает plaintext данных. Вместо этого в запросе используются токены:
+
+```
+[[ENC|v1|<field_name>|<base64url_ciphertext>]]
+```
+
+- Токены формируются on-prem из реальных значений (строки/числа)
+- LLM должен копировать токены как есть
+- После ответа выполняется `unmask_text()` и восстанавливается человекочитаемый текст
+
+### Числовые поля
+- Диагональная матрица: `x_masked = x × scale_factor`
+- Scale factors хранятся как секрет сервиса
+- Обратимость: `x = x_masked / scale_factor`
+
+Пример (умножение на диагональную матрицу):
+
+$$
+\mathbf{x} =
+\begin{bmatrix}
+275.50 \\
+18350.75 \\
+50000.00
+\end{bmatrix},
+\quad
+D =
+\begin{bmatrix}
+1.37 & 0 & 0 \\
+0 & 0.83 & 0 \\
+0 & 0 & 1.11
+\end{bmatrix}
+$$
+
+$$
+\mathbf{x}' = D\mathbf{x} =
+\begin{bmatrix}
+377.435 \\
+15231.1225 \\
+55500.00
+\end{bmatrix}
+$$
+
+### Категориальные поля
+- **MCC**: биективная перестановка 0-9999 по seed
+
+Визуализация (seeded bijection для MCC):
+
+```mermaid
+flowchart LR
+    A["Original MCC (m)"] --> B["Permutation pi (seeded by CAT_SEED)"]
+    B --> C["Masked MCC (m')"]
+```
+
+Пример (иллюстративно; реальные значения зависят от CAT_SEED):
+- `m = 5411` → `m' = 7823`
+
+![MCC permutation (sample)](docs/assets/mcc_permutation_scatter.png)
+
+Как читать scatterplot: каждая точка — это взаимно-однозначное отображение
+исходного MCC (ось X) в замаскированный MCC (ось Y). Идеальная диагональ означала бы
+отсутствие маскирования; «разброс» показывает перестановку при сохранении биекции.
+
+- **Channel**: фиксированный маппинг (POS→CH_ALPHA, etc.)
+
+Визуализация (фиксированный маппинг channel):
+
+```mermaid
+flowchart LR
+    POS[POS] --> CHA[CH_ALPHA]
+    ECOM[ECOM] --> CHB[CH_BETA]
+    ATM[ATM] --> CHG[CH_GAMMA]
+    MOB[MOB] --> CHD[CH_DELTA]
+```
+
+Таблица маппинга:
+
+| Original | Masked |
+|----------|--------|
+| POS | CH_ALPHA |
+| ECOM | CH_BETA |
+| ATM | CH_GAMMA |
+| MOB | CH_DELTA |
+
+
 ## 🔁 Sequence Diagram (End-to-End)
 
 ```mermaid
@@ -77,20 +171,9 @@ sequenceDiagram
 - Step 5–7: токенизация PII для LLM, запрос/ответ только в masked виде.
 - Step 8: de-mask on-prem и выдача текста в RM Workbench.
 
-## 📚 Documentation
-
-- RU: `docs/PII_Masking_Service_Design_ru.md`
-- EN: `docs/PII_Masking_Service_Design_en.md`
-
-Генерация графиков для документации:
-```bash
-pip install -r docs/requirements-docs.txt
-python docs/generate_assets.py
-```
-
 ## 🚀 Быстрый старт
 
-### Локально (3 минуты)
+### Локально
 
 ```bash
 # 1. Клонировать/создать директорию
@@ -318,98 +401,6 @@ python demo_end_to_end.py
 python -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(64)).decode())"
 ```
 
-## 🔐 Безопасность
-
-### Шифрование PII
-- Алгоритм: **AES-256-SIV** (Synthetic IV)
-- Детерминированный AEAD — одинаковый вход → одинаковый выход
-- Domain separation: разные поля с одинаковым значением дают разный ciphertext
-- Associated Data: `scb-demo|v1|{field_name}`
-
-### ENC токены для LLM
-LLM не получает plaintext данных. Вместо этого в запросе используются токены:
-
-```
-[[ENC|v1|<field_name>|<base64url_ciphertext>]]
-```
-
-- Токены формируются on-prem из реальных значений (строки/числа)
-- LLM должен копировать токены как есть
-- После ответа выполняется `unmask_text()` и восстанавливается человекочитаемый текст
-
-### Числовые поля
-- Диагональная матрица: `x_masked = x × scale_factor`
-- Scale factors хранятся как секрет сервиса
-- Обратимость: `x = x_masked / scale_factor`
-
-Пример (умножение на диагональную матрицу):
-
-$$
-\mathbf{x} =
-\begin{bmatrix}
-275.50 \\
-18350.75 \\
-50000.00
-\end{bmatrix},
-\quad
-D =
-\begin{bmatrix}
-1.37 & 0 & 0 \\
-0 & 0.83 & 0 \\
-0 & 0 & 1.11
-\end{bmatrix}
-$$
-
-$$
-\mathbf{x}' = D\mathbf{x} =
-\begin{bmatrix}
-377.435 \\
-15231.1225 \\
-55500.00
-\end{bmatrix}
-$$
-
-### Категориальные поля
-- **MCC**: биективная перестановка 0-9999 по seed
-
-Визуализация (seeded bijection для MCC):
-
-```mermaid
-flowchart LR
-    A["Original MCC (m)"] --> B["Permutation pi (seeded by CAT_SEED)"]
-    B --> C["Masked MCC (m')"]
-```
-
-Пример (иллюстративно; реальные значения зависят от CAT_SEED):
-- `m = 5411` → `m' = 7823`
-
-![MCC permutation (sample)](docs/assets/mcc_permutation_scatter.png)
-
-Как читать scatterplot: каждая точка — это взаимно-однозначное отображение
-исходного MCC (ось X) в замаскированный MCC (ось Y). Идеальная диагональ означала бы
-отсутствие маскирования; «разброс» показывает перестановку при сохранении биекции.
-
-- **Channel**: фиксированный маппинг (POS→CH_ALPHA, etc.)
-
-Визуализация (фиксированный маппинг channel):
-
-```mermaid
-flowchart LR
-    POS[POS] --> CHA[CH_ALPHA]
-    ECOM[ECOM] --> CHB[CH_BETA]
-    ATM[ATM] --> CHG[CH_GAMMA]
-    MOB[MOB] --> CHD[CH_DELTA]
-```
-
-Таблица маппинга:
-
-| Original | Masked |
-|----------|--------|
-| POS | CH_ALPHA |
-| ECOM | CH_BETA |
-| ATM | CH_GAMMA |
-| MOB | CH_DELTA |
-
 ## 📁 Структура проекта
 
 ```
@@ -463,6 +454,19 @@ open http://localhost:8000/docs
 - [ ] Повторить запрос — показать детерминированность
 - [ ] Показать `/v1/unmask/transaction` — восстановление
 - [ ] Запустить `demo_client.py` для автоматической демонстрации
+
+
+## 📚 Documentation
+
+- RU: `docs/PII_Masking_Service_Design_ru.md`
+- EN: `docs/PII_Masking_Service_Design_en.md`
+
+Генерация графиков для документации:
+```bash
+pip install -r docs/requirements-docs.txt
+python docs/generate_assets.py
+```
+
 
 ## 📜 Лицензия
 
