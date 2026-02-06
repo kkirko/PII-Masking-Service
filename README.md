@@ -1,30 +1,32 @@
 # PII Masking Service
 
-Микросервис для маскирования/анонимизации карточных транзакций перед отправкой в облачную аналитику (Databricks) для антифрод-систем.
+Microservice for masking/anonymizing card transactions before sending data to cloud analytics (Databricks) for fraud detection.
 
-## 🎯 Цель
+Russian version: `README.ru.md`
 
-Безопасная передача транзакционных данных в облако с сохранением возможности:
-- Обучения ML-моделей
-- Скоринга транзакций
-- JOIN-операций по ключам
-- Аналитики без доступа к PII
+## 🎯 Goal
 
-## ✨ Возможности
+Securely send transaction data to the cloud while preserving the ability to:
+- Train ML models
+- Score transactions
+- Perform JOINs on keys
+- Run analytics without access to PII
 
-| Тип данных | Трансформация | Обратимость |
-|------------|---------------|-------------|
-| PII поля | AES-256-SIV шифрование | ✅ |
-| Числовые поля | Диагональная матрица (×scale) | ✅ |
-| MCC | Биективная перестановка | ✅ |
-| Channel | Детерминированный маппинг | ✅ |
+## ✨ Capabilities
 
-**Все трансформации детерминированы** — одинаковый вход всегда даёт одинаковый выход.
+| Data Type | Transformation | Reversible |
+|------------|---------------|------------|
+| PII fields | AES-256-SIV encryption | ✅ |
+| Numeric fields | Diagonal matrix scaling (×scale) | ✅ |
+| MCC | Bijective permutation | ✅ |
+| Channel | Deterministic mapping | ✅ |
 
-Дополнительно:
-- ✅ Data Classification на уровне схем (PUBLIC/INTERNAL/CONFIDENTIAL/PII/PCI)
-- ✅ Policy enforcement перед egress в Cloud/LLM
-- ✅ LLM explainability flow с ENC токенами `[[ENC|v1|field|ciphertext]]`
+**All transformations are deterministic** — the same input always produces the same output.
+
+Additionally:
+- ✅ Data Classification on schema level (PUBLIC/INTERNAL/CONFIDENTIAL/PII/PCI)
+- ✅ Policy enforcement before egress to Cloud/LLM
+- ✅ LLM explainability flow with ENC tokens `[[ENC|v1|field|ciphertext]]`
 
 ## 🔁 Sequence Diagram (End-to-End)
 
@@ -69,55 +71,55 @@ sequenceDiagram
     Svc-->>UI: Aggregated artifacts for UI playback
 ```
 
-Кратко по шагам:
-- Step 0: сервис принимает исходный JSON транзакции с PII.
-- Step 1: маскирование (PII → AES-256-SIV, числа → scaling, категории → mapping).
-- Step 2–3: отправка masked в облако и получение скоринга.
-- Step 3–4: сборка payload для Decision Engine и решение (stub).
-- Step 5–7: токенизация PII для LLM, запрос/ответ только в masked виде.
-- Step 8: de-mask on-prem и выдача текста в RM Workbench.
+Summary:
+- Step 0: Service receives the raw transaction JSON with PII.
+- Step 1: Masking (PII → AES-256-SIV, numeric → scaling, categorical → mapping).
+- Step 2–3: Cloud scoring round-trip with masked payload.
+- Step 3–4: Decision Engine payload + decision response (stub).
+- Step 5–7: Tokenize PII for LLM, masked request/response.
+- Step 8: On-prem de-mask and RM output.
 
 ## 📚 Documentation
 
 - RU: `docs/PII_Masking_Service_Design_ru.md`
 - EN: `docs/PII_Masking_Service_Design_en.md`
 
-Генерация графиков для документации:
+Generate documentation assets:
 ```bash
 pip install -r docs/requirements-docs.txt
 python docs/generate_assets.py
 ```
 
-## 🚀 Быстрый старт
+## 🚀 Quick Start
 
-### Локально (3 минуты)
+### Local (3 minutes)
 
 ```bash
-# 1. Клонировать/создать директорию
+# 1. Clone/create directory
 cd pii-masking-service
 
-# 2. Создать виртуальное окружение
+# 2. Create virtual environment
 python3.11 -m venv venv
 source venv/bin/activate  # Linux/Mac
-# или: venv\Scripts\activate  # Windows
+# or: venv\Scripts\activate  # Windows
 
-# 3. Установить зависимости
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Запустить сервис
+# 4. Run service
 uvicorn app.main:app --reload
 
-# 5. Открыть Swagger UI
+# 5. Open Swagger UI
 open http://localhost:8000/docs
 ```
 
 ### Docker
 
 ```bash
-# Сборка
+# Build
 docker build -t pii-masking-service .
 
-# Запуск (с переменными окружения)
+# Run (with environment variables)
 docker run -d \
   -p 8000:8000 \
   -e PII_KEY_B64="your_base64_key_here" \
@@ -125,20 +127,20 @@ docker run -d \
   --name pii-masking \
   pii-masking-service
 
-# Проверка
+# Check
 curl http://localhost:8000/health
 ```
 
 ## 📖 API
 
 ### `GET /health`
-Проверка состояния сервиса.
+Service health check.
 
 ```bash
 curl http://localhost:8000/health
 ```
 
-Ответ:
+Response:
 ```json
 {
   "status": "ok",
@@ -148,7 +150,7 @@ curl http://localhost:8000/health
 ```
 
 ### `POST /v1/mask/transaction`
-Маскирование транзакции.
+Mask a transaction.
 
 ```bash
 curl -X POST http://localhost:8000/v1/mask/transaction \
@@ -178,7 +180,7 @@ curl -X POST http://localhost:8000/v1/mask/transaction \
   }'
 ```
 
-Ответ (структура):
+Response (structure):
 ```json
 {
   "transaction_id": "TXN-20260120-000001",
@@ -207,16 +209,16 @@ curl -X POST http://localhost:8000/v1/mask/transaction \
 ```
 
 ### `POST /v1/unmask/transaction`
-Восстановление исходной транзакции (только для демо).
+Restore original transaction (demo only).
 
 ```bash
 curl -X POST http://localhost:8000/v1/unmask/transaction \
   -H "Content-Type: application/json" \
-  -d '{"...masked transaction JSON...}'
+  -d '{"...masked transaction JSON..."}'
 ```
 
 ### `POST /v1/mask/customer`
-Маскирование профиля клиента.
+Mask customer profile.
 
 ```bash
 curl -X POST http://localhost:8000/v1/mask/customer \
@@ -233,7 +235,7 @@ curl -X POST http://localhost:8000/v1/mask/customer \
 ```
 
 ### `POST /v1/mask/text`
-Замена чувствительных значений на ENC токены.
+Replace sensitive values with ENC tokens.
 
 ```bash
 curl -X POST http://localhost:8000/v1/mask/text \
@@ -249,7 +251,7 @@ curl -X POST http://localhost:8000/v1/mask/text \
 ```
 
 ### `POST /v1/unmask/text`
-Восстановление ENC токенов (только для демо).
+Restore ENC tokens (demo only).
 
 ```bash
 curl -X POST http://localhost:8000/v1/unmask/text \
@@ -260,7 +262,7 @@ curl -X POST http://localhost:8000/v1/unmask/text \
 ```
 
 ### `POST /v1/fraud/explain`
-Полный on-prem -> cloud -> LLM -> RM поток. В LLM уходит только masked payload.
+Full on-prem -> cloud -> LLM -> RM flow. LLM receives masked payload only.
 
 ```bash
 curl -X POST http://localhost:8000/v1/fraud/explain \
@@ -271,93 +273,101 @@ curl -X POST http://localhost:8000/v1/fraud/explain \
   }'
 ```
 
-## 🎮 Демо-клиент
+## 🎮 Demo Client
 
 ```bash
-# Запустить демонстрацию
+# Run demo
 python demo_client.py
 
-# С другим URL
+# With different URL
 python demo_client.py --base-url http://192.168.1.100:8000
 ```
 
 ### End-to-End Explainability Demo
 
 ```bash
-# Полный on-prem -> cloud -> LLM -> RM поток
+# Full on-prem -> cloud -> LLM -> RM flow
 python demo_end_to_end.py
 ```
 
-Демо покажет:
+Demo shows:
 1. ✅ Health check
-2. 📤 Отправку транзакции на маскирование
-3. 📊 Детали трансформаций (PII → ciphertext, числа × scale, категории)
-4. 🔄 Проверку детерминированности (повторный запрос)
-5. 🔓 Восстановление исходных данных (unmask)
-6. ✔️ Верификацию совпадения
+2. 📤 Sending transaction for masking
+3. 📊 Transformation details (PII → ciphertext, numbers × scale, categories)
+4. 🔄 Determinism check (repeat request)
+5. 🔓 Original data restoration (unmask)
+6. ✔️ Verification of equality
 
-## ⚙️ Конфигурация
+## ⚙️ Configuration
 
-Переменные окружения (см. `.env.example`):
+Environment variables (see `.env.example`):
 
-| Переменная | Описание | По умолчанию |
+| Variable | Description | Default |
 |------------|----------|--------------|
-| `PII_KEY_B64` | Ключ шифрования (64 байта, base64) | Генерируется случайно |
-| `MASK_VERSION` | Версия маскирования | `v1` |
-| `ENABLE_UNMASK` | Включить /unmask endpoint | `true` |
-| `ENABLE_UNMASK_TEXT` | Включить /unmask/text endpoint | `true` |
-| `SCALE_AMOUNT` | Множитель для amount | `1.37` |
-| `SCALE_AVAILABLE_BALANCE` | Множитель для available_balance | `0.83` |
-| `SCALE_CREDIT_LIMIT` | Множитель для credit_limit | `1.11` |
-| `CAT_SEED` | Seed для перестановки категорий | Derived from key |
-| `LOG_HASH_SALT` | Соль для безопасного логирования | empty |
+| `PII_KEY_B64` | Encryption key (64 bytes, base64) | Randomly generated |
+| `MASK_VERSION` | Masking version | `v1` |
+| `ENABLE_UNMASK` | Enable /unmask endpoint | `true` |
+| `ENABLE_UNMASK_TEXT` | Enable /unmask/text endpoint | `true` |
+| `SCALE_AMOUNT` | Scale factor for amount | `1.37` |
+| `SCALE_AVAILABLE_BALANCE` | Scale factor for available_balance | `0.83` |
+| `SCALE_CREDIT_LIMIT` | Scale factor for credit_limit | `1.11` |
+| `CAT_SEED` | Seed for categorical permutation | Derived from key |
+| `LOG_HASH_SALT` | Salt for safe logging | empty |
 
-### Генерация ключа
+### Generate key
 
 ```bash
 python -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(64)).decode())"
 ```
 
-## 🔐 Безопасность
+## 🔐 Security
 
-### Шифрование PII
-- Алгоритм: **AES-256-SIV** (Synthetic IV)
-- Детерминированный AEAD — одинаковый вход → одинаковый выход
-- Domain separation: разные поля с одинаковым значением дают разный ciphertext
+### PII Encryption
+- Algorithm: **AES-256-SIV** (Synthetic IV)
+- Deterministic AEAD — same input produces same output
+- Domain separation: same value in different fields produces different ciphertext
 - Associated Data: `scb-demo|v1|{field_name}`
 
-### ENC токены для LLM
-LLM не получает plaintext данных. Вместо этого в запросе используются токены:
+### ENC tokens for LLM
+LLM never receives plaintext data. Instead, the request uses tokens:
 
 ```
 [[ENC|v1|<field_name>|<base64url_ciphertext>]]
 ```
 
-- Токены формируются on-prem из реальных значений (строки/числа)
-- LLM должен копировать токены как есть
-- После ответа выполняется `unmask_text()` и восстанавливается человекочитаемый текст
+- Tokens are generated on-prem from real values (strings/numbers)
+- LLM must copy tokens as-is
+- After response, `unmask_text()` restores readable text
 
-### Числовые поля
-- Диагональная матрица: `x_masked = x × scale_factor`
-- Scale factors хранятся как секрет сервиса
-- Обратимость: `x = x_masked / scale_factor`
+### Numeric fields
+- Diagonal matrix: `x_masked = x × scale_factor`
+- Scale factors are stored as service secrets
+- Reversible: `x = x_masked / scale_factor`
 
-### Категориальные поля
-- **MCC**: биективная перестановка 0-9999 по seed
-- **Channel**: фиксированный маппинг (POS→CH_ALPHA, etc.)
+Example (diagonal matrix multiplication):
 
-## 📁 Структура проекта
+$$
+\mathbf{x} = \begin{bmatrix}275.50\\18350.75\\50000.00\end{bmatrix},\quad
+D = \begin{bmatrix}1.37 & 0 & 0\\0 & 0.83 & 0\\0 & 0 & 1.11\end{bmatrix},\quad
+\mathbf{x'} = D\mathbf{x} = \begin{bmatrix}377.435\\15231.1225\\55500.00\end{bmatrix}
+$$
+
+### Categorical fields
+- **MCC**: bijective permutation 0-9999 by seed
+- **Channel**: fixed mapping (POS→CH_ALPHA, etc.)
+
+## 📁 Project structure
 
 ```
 pii-masking-service/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py          # FastAPI приложение
-│   ├── config.py        # Конфигурация и секреты
-│   ├── schemas.py       # Pydantic модели
-│   ├── masking.py       # Логика маскирования
+│   ├── main.py          # FastAPI app
+│   ├── config.py        # Configuration and secrets
+│   ├── schemas.py       # Pydantic models
+│   ├── masking.py       # Masking logic
 │   ├── classification.py # Data classification + policy enforcement
-│   ├── text_masking.py   # ENC токены для LLM
+│   ├── text_masking.py   # ENC tokens for LLM
 │   ├── cloud_stub.py     # Stub cloud scoring
 │   └── llm_stub.py       # Stub LLM
 ├── requirements.txt
@@ -368,13 +378,13 @@ pii-masking-service/
 └── demo_end_to_end.py
 ```
 
-## 🧪 Тестирование
+## 🧪 Testing
 
 ```bash
-# Запустить сервис
+# Start service
 uvicorn app.main:app --reload &
 
-# Запустить демо-клиент
+# Run demo client
 python demo_client.py
 
 # Health check
@@ -384,26 +394,26 @@ curl http://localhost:8000/health
 open http://localhost:8000/docs
 ```
 
-## 📋 Чеклист для демонстрации
+## 📋 Demo checklist
 
-- [ ] Запустить сервис: `uvicorn app.main:app --reload`
-- [ ] Открыть Swagger UI: http://localhost:8000/docs
-- [ ] Показать `/health` endpoint
-- [ ] Показать `/v1/mask/transaction` со sample JSON
-- [ ] Обратить внимание на:
-  - PII поля стали base64url строками
-  - Числа изменились (×scale)
-  - MCC изменился (перестановка)
-  - Channel изменился (маппинг)
-  - Появился `mask_version`
-- [ ] Повторить запрос — показать детерминированность
-- [ ] Показать `/v1/unmask/transaction` — восстановление
-- [ ] Запустить `demo_client.py` для автоматической демонстрации
+- [ ] Start service: `uvicorn app.main:app --reload`
+- [ ] Open Swagger UI: http://localhost:8000/docs
+- [ ] Show `/health` endpoint
+- [ ] Show `/v1/mask/transaction` with sample JSON
+- [ ] Highlight:
+  - PII fields became base64url strings
+  - Numbers changed (×scale)
+  - MCC changed (permutation)
+  - Channel changed (mapping)
+  - `mask_version` added
+- [ ] Repeat request to show determinism
+- [ ] Show `/v1/unmask/transaction` — restoration
+- [ ] Run `demo_client.py` for automated demo
 
-## 📜 Лицензия
+## 📜 License
 
 Internal use only. Not for distribution.
 
 ---
 
-*Разработано для демонстрации концепции PII masking в card fraud detection pipeline.*
+*Built for demonstrating PII masking in a card fraud detection pipeline.*
