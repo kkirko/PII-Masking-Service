@@ -347,9 +347,28 @@ LLM never receives plaintext data. Instead, the request uses tokens:
 Example (diagonal matrix multiplication):
 
 $$
-\mathbf{x} = \begin{bmatrix}275.50\\18350.75\\50000.00\end{bmatrix},\quad
-D = \begin{bmatrix}1.37 & 0 & 0\\0 & 0.83 & 0\\0 & 0 & 1.11\end{bmatrix},\quad
-\mathbf{x'} = D\mathbf{x} = \begin{bmatrix}377.435\\15231.1225\\55500.00\end{bmatrix}
+\mathbf{x} =
+\begin{bmatrix}
+275.50 \\
+18350.75 \\
+50000.00
+\end{bmatrix},
+\quad
+D =
+\begin{bmatrix}
+1.37 & 0 & 0 \\
+0 & 0.83 & 0 \\
+0 & 0 & 1.11
+\end{bmatrix}
+$$
+
+$$
+\mathbf{x}' = D\mathbf{x} =
+\begin{bmatrix}
+377.435 \\
+15231.1225 \\
+55500.00
+\end{bmatrix}
 $$
 
 ### Categorical fields
