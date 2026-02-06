@@ -1,0 +1,1994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PII Masking Service - Executive Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f7f9fc;
+            --surface: #ffffff;
+            --ink: #0f172a;
+            --ink-soft: #475569;
+            --brand: #1e3a8a;
+            --accent: #0f766e;
+            --success: #15803d;
+            --warning: #b45309;
+            --danger: #b91c1c;
+            --line: #e2e8f0;
+            --shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Sora', sans-serif;
+            background: radial-gradient(circle at 8% 8%, rgba(30, 58, 138, 0.08), transparent 45%),
+                        radial-gradient(circle at 90% 10%, rgba(15, 118, 110, 0.08), transparent 40%),
+                        linear-gradient(180deg, #f7f9fc 0%, #f1f5f9 60%, #ffffff 100%);
+            color: var(--ink);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 18px 24px 32px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .title-block {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .title-block h1 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: var(--ink-soft);
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .badge-ok {
+            background: rgba(21, 128, 61, 0.12);
+            color: #166534;
+        }
+
+        .badge-info {
+            background: rgba(30, 58, 138, 0.12);
+            color: #1e3a8a;
+        }
+
+        .badge-warn {
+            background: rgba(180, 83, 9, 0.12);
+            color: #92400e;
+        }
+
+        .badge-danger {
+            background: rgba(185, 28, 28, 0.12);
+            color: #991b1b;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-mini {
+            padding: 6px 10px;
+            font-size: 0.75rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(120deg, #1e3a8a 0%, #0f766e 100%);
+            color: #ffffff;
+            box-shadow: 0 12px 24px rgba(30, 58, 138, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 26px rgba(30, 58, 138, 0.25);
+        }
+
+        .btn-secondary {
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            color: #1e3a8a;
+        }
+
+        .btn-ghost {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            color: var(--ink-soft);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .toggle {
+            width: 42px;
+            height: 22px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            position: relative;
+        }
+
+        .toggle::after {
+            content: '';
+            width: 16px;
+            height: 16px;
+            background: #ffffff;
+            border-radius: 999px;
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.2s ease;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+        }
+
+        input:checked + .toggle {
+            background: #1e3a8a;
+        }
+
+        input:checked + .toggle::after {
+            transform: translateX(20px);
+        }
+
+        .status-pill {
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: #e2e8f0;
+            color: #475569;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .status-pill.processing {
+            background: rgba(180, 83, 9, 0.15);
+            color: #92400e;
+        }
+
+        .status-pill.success {
+            background: rgba(21, 128, 61, 0.15);
+            color: #166534;
+        }
+
+        .status-pill.error {
+            background: rgba(185, 28, 28, 0.15);
+            color: #991b1b;
+        }
+
+        .flow-strip {
+            margin-top: 12px;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .flow-track {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .flow-step {
+            position: relative;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            background: #ffffff;
+        }
+
+        .flow-step::after {
+            content: '→';
+            position: absolute;
+            right: -14px;
+            color: #cbd5f5;
+        }
+
+        .flow-step:last-child::after {
+            content: '';
+        }
+
+        .flow-step.active {
+            background: #1e3a8a;
+            border-color: #1e3a8a;
+            color: #ffffff;
+        }
+
+        .flow-step.completed {
+            background: #dbeafe;
+            border-color: #bfdbfe;
+            color: #1e3a8a;
+        }
+
+        .manual-controls {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+
+        .manual-step {
+            font-size: 0.72rem;
+        }
+
+        .main-grid {
+            margin-top: 14px;
+            display: grid;
+            grid-template-columns: 0.9fr 1.5fr;
+            gap: 14px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .decision-card,
+        .rm-card {
+            padding: 16px 18px;
+        }
+
+        .decision-score {
+            font-size: 2.3rem;
+            font-weight: 700;
+        }
+
+        .decision-metrics {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        .reason-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: #eef2ff;
+            color: #3730a3;
+        }
+
+        .rm-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px 14px;
+            margin-top: 12px;
+        }
+
+        .rm-field {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            font-size: 0.78rem;
+            color: #64748b;
+        }
+
+        .rm-field strong {
+            font-size: 0.9rem;
+            color: var(--ink);
+        }
+
+        .rm-score-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 12px;
+        }
+
+        .rm-score {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .section-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        .rm-note-block {
+            margin-top: 12px;
+        }
+
+        .rm-note-text {
+            margin-top: 6px;
+            font-size: 0.9rem;
+            color: #0f172a;
+            display: -webkit-box;
+            -webkit-line-clamp: 6;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .rm-note-text.expanded {
+            -webkit-line-clamp: unset;
+        }
+
+        .rm-actions {
+            margin: 8px 0 0;
+            padding-left: 18px;
+            font-size: 0.85rem;
+        }
+
+        .developer-trace {
+            margin-top: 18px;
+            padding: 16px 18px;
+            border-radius: 18px;
+            background: #ffffff;
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow);
+        }
+
+        .trace-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .trace-grid {
+            margin-top: 10px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .trace-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 6px 12px;
+            background: #f8fafc;
+        }
+
+        .trace-item summary {
+            cursor: pointer;
+            font-weight: 600;
+            list-style: none;
+        }
+
+        .trace-item summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .trace-item.active {
+            border-color: #1e3a8a;
+            box-shadow: 0 10px 18px rgba(30, 58, 138, 0.1);
+        }
+
+        .trace-body {
+            display: grid;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .trace-preview {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.75rem;
+            color: #0f172a;
+        }
+
+        .trace-actions {
+            margin: 0;
+            padding-left: 18px;
+            font-size: 0.82rem;
+        }
+
+        .chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .chip-token {
+            background: #ecfeff;
+            color: #0f766e;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.7rem;
+        }
+
+        .token-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(15, 118, 110, 0.12);
+            color: #0f766e;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.7rem;
+        }
+
+        .code-block {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 10px;
+            padding: 12px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.75rem;
+            max-height: 240px;
+            overflow: auto;
+        }
+
+        .json-pii {
+            color: #f87171;
+        }
+
+        .json-numeric {
+            color: #fbbf24;
+        }
+
+        .json-categorical {
+            color: #c084fc;
+        }
+
+        .json-added {
+            color: #4ade80;
+        }
+
+        .code-block-wide {
+            max-height: 420px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .code-block-tall {
+            max-height: 520px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .diff-row {
+            display: flex;
+            gap: 16px;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .diff-row:last-child {
+            border-bottom: none;
+        }
+
+        .diff-left {
+            flex: 1.3;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.75rem;
+        }
+
+        .diff-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+        }
+
+        .diff-values {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .diff-arrow {
+            color: #1e3a8a;
+        }
+
+        .diff-right {
+            flex: 0.9;
+            font-size: 0.78rem;
+            color: #0f172a;
+            background: #eef2ff;
+            border-radius: 10px;
+            padding: 8px 10px;
+            align-self: flex-start;
+            display: grid;
+            gap: 6px;
+        }
+
+        .meta-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .meta-chip {
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .meta-class {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .meta-sensitivity {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .meta-control {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .meta-row {
+            display: grid;
+            gap: 2px;
+            font-size: 0.72rem;
+        }
+
+        .meta-label {
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 700;
+            color: #64748b;
+        }
+
+        .meta-value {
+            color: #0f172a;
+        }
+
+        .error-banner {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(185, 28, 28, 0.1);
+            color: #991b1b;
+            border: 1px solid rgba(185, 28, 28, 0.2);
+            display: none;
+            font-size: 0.82rem;
+        }
+
+        .toast {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            opacity: 0;
+            transform: translateY(10px);
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.2);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .dev-only {
+            display: none;
+        }
+
+        body[data-dev="on"] .dev-only {
+            display: block;
+        }
+
+        .manual-only {
+            display: none;
+        }
+
+        body[data-manual="on"] .manual-only {
+            display: flex;
+        }
+
+        @media (max-width: 1100px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .rm-summary-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 720px) {
+            .flow-track {
+                gap: 6px;
+            }
+
+            .flow-step {
+                font-size: 0.6rem;
+            }
+
+            .rm-summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body data-dev="on" data-manual="on">
+    <div class="container">
+        <header class="top-bar">
+            <div class="title-block">
+                <span class="badge badge-ok">On-prem demo</span>
+                <h1>PII Masking Service</h1>
+                <div class="subtitle">Interactive playback with compact executive view.</div>
+            </div>
+            <div class="toolbar">
+                <button class="btn btn-primary" id="play-btn">▶ Run Demo</button>
+                <button class="btn btn-secondary" id="pause-btn">⏸ Pause</button>
+                <button class="btn btn-secondary" id="next-btn">⏭ Next Step</button>
+                <button class="btn btn-ghost" id="reset-btn">🔄 Reset</button>
+                <label style="display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:600; color: var(--ink-soft);">
+                    Speed
+                    <select id="speed-select" class="btn btn-ghost" style="padding: 6px 8px;">
+                        <option value="1400">Slow</option>
+                        <option value="900" selected>Normal</option>
+                        <option value="500">Fast</option>
+                    </select>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.8rem; font-weight:600; color: var(--ink-soft);">
+                    Developer mode
+                    <input id="dev-toggle" type="checkbox" style="display:none;" checked>
+                    <span class="toggle"></span>
+                </label>
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.8rem; font-weight:600; color: var(--ink-soft);">
+                    Manual mode
+                    <input id="manual-toggle" type="checkbox" style="display:none;" checked>
+                    <span class="toggle"></span>
+                </label>
+                <span class="status-pill" id="status-pill">Idle</span>
+            </div>
+        </header>
+
+        <div class="error-banner" id="error-banner"></div>
+
+        <section class="card flow-strip">
+            <div style="font-weight:600; font-size:0.85rem;">Flow</div>
+            <div class="flow-track">
+                <div class="flow-step" data-flow="input">Input</div>
+                <div class="flow-step" data-flow="mask">Masking</div>
+                <div class="flow-step" data-flow="cloud">Databricks Score</div>
+                <div class="flow-step" data-flow="decision">Decision Payload</div>
+                <div class="flow-step" data-flow="decisionResult">Decision Response</div>
+                <div class="flow-step" data-flow="tokenization">Tokenization</div>
+                <div class="flow-step" data-flow="llmRequest">LLM Request</div>
+                <div class="flow-step" data-flow="llmResponse">LLM Response</div>
+                <div class="flow-step" data-flow="rm">RM Workbench</div>
+            </div>
+        </section>
+
+        <section class="manual-controls manual-only">
+            <button class="btn btn-secondary btn-mini" id="manual-start-btn">Start manual demo</button>
+        </section>
+
+        <section class="developer-trace dev-only">
+            <div class="trace-header">
+                <div>
+                    <h3 style="margin:0; font-size:1rem;">Developer Trace</h3>
+                    <p style="margin:4px 0 0; font-size:0.8rem; color: var(--ink-soft);">Step-by-step payloads and JSON (collapsible).</p>
+                </div>
+            </div>
+
+            <div class="trace-grid">
+                <details id="trace-input" class="trace-item">
+                    <summary>Step 0 · On-Prem Input</summary>
+                    <div class="trace-body">
+                        <pre id="trace-input-json" class="code-block code-block-tall"></pre>
+                        <div class="manual-controls manual-only">
+                            <button class="btn btn-ghost btn-mini manual-step" data-step="1">Next step</button>
+                        </div>
+                    </div>
+                </details>
+
+                <details id="trace-mask" class="trace-item">
+                    <summary>Step 1 · Masked Transaction</summary>
+                    <div class="trace-body">
+                        <div id="trace-mask-diff"></div>
+                        <pre id="trace-mask-json" class="code-block code-block-tall"></pre>
+                        <div class="manual-controls manual-only">
+                            <button class="btn btn-ghost btn-mini manual-step" data-step="2">Next step</button>
+                        </div>
+                    </div>
+                </details>
+
+                <details id="trace-cloud" class="trace-item">
+                    <summary>Step 2 · Databricks Cloud Payload + Result</summary>
+                    <div class="trace-body">
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <button class="btn btn-secondary btn-mini" data-copy="cloud-payload">Copy payload</button>
+                            <button class="btn btn-secondary btn-mini" data-copy="cloud-result">Copy result</button>
+                        </div>
+                        <pre id="trace-cloud-payload" class="code-block"></pre>
+                        <pre id="trace-cloud-result" class="code-block"></pre>
+                        <div class="manual-controls manual-only">
+                            <button class="btn btn-ghost btn-mini manual-step" data-step="3">Next step</button>
+                        </div>
+                    </div>
+                </details>
+
+                <details id="trace-decision" class="trace-item">
+                    <summary>Step 3 · Decision Engine Payload</summary>
+                    <div class="trace-body">
+                        <button class="btn btn-secondary btn-mini" data-copy="decision-payload">Copy payload</button>
+                        <pre id="trace-decision-payload" class="code-block code-block-tall"></pre>
+                        <div class="manual-controls manual-only">
+                            <button class="btn btn-ghost btn-mini manual-step" data-step="4">Next step</button>
+                        </div>
+                    </div>
+                </details>
+
+                <details id="trace-decision-result" class="trace-item">
+                    <summary>Step 4 · Decision Engine Response</summary>
+                    <div class="trace-body">
+                        <pre id="trace-decision-result-json" class="code-block code-block-tall"></pre>
+                        <div class="manual-controls manual-only">
+                            <button class="btn btn-ghost btn-mini manual-step" data-step="5">Next step</button>
+                        </div>
+                    </div>
+                </details>
+
+                <details id="trace-tokenization" class="trace-item">
+                    <summary>Step 5 · PII Tokenization for LLM</summary>
+                    <div class="trace-body">
+                        <div style="font-size:0.82rem; color: var(--ink-soft);">
+                            PII values are converted into deterministic ENC tokens before the LLM request.
+                        </div>
+                        <div id="trace-tokenization-diff"></div>
+                        <pre id="trace-tokenization-json" class="code-block code-block-tall"></pre>
+                        <div class="manual-controls manual-only">
+                            <button class="btn btn-ghost btn-mini manual-step" data-step="6">Next step</button>
+                        </div>
+                    </div>
+                </details>
+
+                <details id="trace-llm-request" class="trace-item">
+                    <summary>Step 6 · LLM Request (masked)</summary>
+                    <div class="trace-body">
+                        <span class="badge badge-ok" id="llm-plaintext-badge">0 plaintext detected</span>
+                        <div id="llm-request-preview" class="trace-preview"></div>
+                        <div id="llm-token-chips" class="chip-row"></div>
+                        <button class="btn btn-secondary btn-mini" data-copy="llm-request">Copy masked request</button>
+                        <pre id="llm-request-raw" class="code-block code-block-tall"></pre>
+                        <div class="manual-controls manual-only">
+                            <button class="btn btn-ghost btn-mini manual-step" data-step="7">Next step</button>
+                        </div>
+                    </div>
+                </details>
+
+                <details id="trace-llm-response" class="trace-item">
+                    <summary>Step 7 · LLM Response (masked)</summary>
+                    <div class="trace-body">
+                        <div id="llm-response-preview" class="trace-preview"></div>
+                        <ul id="llm-actions" class="trace-actions"></ul>
+                        <button class="btn btn-secondary btn-mini" data-copy="llm-response">Copy masked response</button>
+                        <pre id="llm-response-raw" class="code-block code-block-wide"></pre>
+                        <div class="manual-controls manual-only">
+                            <button class="btn btn-ghost btn-mini manual-step" data-step="8">Next step</button>
+                        </div>
+                    </div>
+                </details>
+
+                <details id="trace-rm" class="trace-item">
+                    <summary>Step 8 · RM Workbench (unmasked)</summary>
+                    <div class="trace-body">
+                        <pre id="trace-rm-text" class="code-block code-block-wide"></pre>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <section class="main-grid">
+            <div class="card decision-card">
+                <div class="card-header">
+                    <h3 style="margin:0; font-size:1rem;">Decision Engine (on-prem)</h3>
+                    <span class="badge badge-info">Original + score</span>
+                </div>
+                <div class="decision-metrics">
+                    <div class="decision-score" id="decision-score">--</div>
+                    <div>
+                        <div style="font-weight:600;" id="decision-label">Awaiting scoring</div>
+                        <div class="reason-chips" id="decision-reasons"></div>
+                    </div>
+                </div>
+                <div id="decision-preview" style="margin-top:10px; font-size:0.82rem; color: var(--ink-soft);">
+                    No payload yet.
+                </div>
+                <button class="btn btn-secondary" data-copy="decision-payload" style="margin-top:10px;">Copy payload</button>
+            </div>
+
+            <div class="card rm-card">
+                <div class="card-header">
+                    <h3 style="margin:0; font-size:1rem;">RM Workbench (unmasked on-prem)</h3>
+                    <span class="badge badge-info">De-masked on-prem only</span>
+                </div>
+
+                <div class="rm-summary-grid">
+                    <div class="rm-field">
+                        <span>Transaction ID</span>
+                        <strong id="rm-transaction-id">--</strong>
+                    </div>
+                    <div class="rm-field">
+                        <span>Timestamp</span>
+                        <strong id="rm-timestamp">--</strong>
+                    </div>
+                    <div class="rm-field">
+                        <span>Customer</span>
+                        <strong id="rm-customer">--</strong>
+                    </div>
+                    <div class="rm-field">
+                        <span>Merchant</span>
+                        <strong id="rm-merchant">--</strong>
+                    </div>
+                    <div class="rm-field">
+                        <span>Amount</span>
+                        <strong id="rm-amount">--</strong>
+                    </div>
+                    <div class="rm-field">
+                        <span>Channel</span>
+                        <strong id="rm-channel">--</strong>
+                    </div>
+                    <div class="rm-field">
+                        <span>Country / Currency</span>
+                        <strong id="rm-country">--</strong>
+                    </div>
+                </div>
+
+                <div class="rm-score-row">
+                    <div class="rm-score" id="rm-score">--</div>
+                    <div>
+                        <div style="font-weight:600;" id="rm-risk-label">Awaiting scoring</div>
+                        <div class="reason-chips" id="rm-reasons"></div>
+                    </div>
+                </div>
+
+                <div class="rm-note-block">
+                    <div class="section-title">RM Note</div>
+                    <div id="rm-note" class="rm-note-text">Awaiting de-anonymized note.</div>
+                    <button class="btn btn-ghost btn-mini" id="rm-note-toggle" style="margin-top:6px;">Expand</button>
+                </div>
+
+                <div style="margin-top:10px;">
+                    <div class="section-title">Recommended actions</div>
+                    <ul class="rm-actions" id="rm-actions"></ul>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const SAMPLE_TRANSACTION = {
+            "transaction_id": "TXN-20260120-000001",
+            "transaction_ts": "2026-01-20T10:15:30+03:00",
+            "customer_id": "CUST-QA-00987234",
+            "full_name": "Ahmed Al Mansoori",
+            "phone": "+974 5512 3456",
+            "email": "ahmed.almansoori@example.qa",
+            "billing_address": "QA, Doha, West Bay, Diplomatic Area, Street 805, Building 12, Apt 1503",
+            "card_pan": "4111111111111111",
+            "card_expiry": "12/28",
+            "merchant_id": "MRC-QA-778812",
+            "merchant_name": "CARREFOUR CITY CENTER DOHA",
+            "mcc": 5411,
+            "merchant_country": "QA",
+            "terminal_id": "TERM-QA-100200",
+            "channel": "POS",
+            "currency": "QAR",
+            "amount": 275.50,
+            "available_balance": 18350.75,
+            "credit_limit": 50000.00,
+            "ip_address": "203.0.113.10",
+            "device_id": "DEV-qa-4f1c2a9b",
+            "is_card_present": true
+        };
+
+        const PII_FIELDS = [
+            "customer_id", "full_name", "phone", "email",
+            "billing_address", "card_pan", "card_expiry", "ip_address", "device_id"
+        ];
+
+        const NUMERIC_FIELDS = ["amount", "available_balance", "credit_limit"];
+        const CATEGORICAL_FIELDS = ["mcc", "channel"];
+        const ENC_TOKEN_REGEX = /\[\[ENC\|v\d+\|[^|]+\|[A-Za-z0-9_-]+=*\]\]/g;
+
+        const elements = {
+            playBtn: document.getElementById('play-btn'),
+            pauseBtn: document.getElementById('pause-btn'),
+            nextBtn: document.getElementById('next-btn'),
+            resetBtn: document.getElementById('reset-btn'),
+            speedSelect: document.getElementById('speed-select'),
+            devToggle: document.getElementById('dev-toggle'),
+            manualToggle: document.getElementById('manual-toggle'),
+            manualStartBtn: document.getElementById('manual-start-btn'),
+            statusPill: document.getElementById('status-pill'),
+            errorBanner: document.getElementById('error-banner'),
+            flowSteps: Array.from(document.querySelectorAll('[data-flow]')),
+            decisionScore: document.getElementById('decision-score'),
+            decisionLabel: document.getElementById('decision-label'),
+            decisionReasons: document.getElementById('decision-reasons'),
+            decisionPreview: document.getElementById('decision-preview'),
+            rmTransactionId: document.getElementById('rm-transaction-id'),
+            rmTimestamp: document.getElementById('rm-timestamp'),
+            rmCustomer: document.getElementById('rm-customer'),
+            rmMerchant: document.getElementById('rm-merchant'),
+            rmAmount: document.getElementById('rm-amount'),
+            rmChannel: document.getElementById('rm-channel'),
+            rmCountry: document.getElementById('rm-country'),
+            rmScore: document.getElementById('rm-score'),
+            rmRiskLabel: document.getElementById('rm-risk-label'),
+            rmReasons: document.getElementById('rm-reasons'),
+            rmNote: document.getElementById('rm-note'),
+            rmActions: document.getElementById('rm-actions'),
+            rmNoteToggle: document.getElementById('rm-note-toggle'),
+            traceInput: document.getElementById('trace-input'),
+            traceMask: document.getElementById('trace-mask'),
+            traceCloud: document.getElementById('trace-cloud'),
+            traceDecision: document.getElementById('trace-decision'),
+            traceDecisionResult: document.getElementById('trace-decision-result'),
+            traceTokenization: document.getElementById('trace-tokenization'),
+            traceLlmRequest: document.getElementById('trace-llm-request'),
+            traceLlmResponse: document.getElementById('trace-llm-response'),
+            traceRm: document.getElementById('trace-rm'),
+            traceInputJson: document.getElementById('trace-input-json'),
+            traceMaskJson: document.getElementById('trace-mask-json'),
+            traceMaskDiff: document.getElementById('trace-mask-diff'),
+            traceCloudPayload: document.getElementById('trace-cloud-payload'),
+            traceCloudResult: document.getElementById('trace-cloud-result'),
+            traceDecisionPayload: document.getElementById('trace-decision-payload'),
+            traceDecisionResultJson: document.getElementById('trace-decision-result-json'),
+            traceTokenizationDiff: document.getElementById('trace-tokenization-diff'),
+            traceTokenizationJson: document.getElementById('trace-tokenization-json'),
+            llmPlaintextBadge: document.getElementById('llm-plaintext-badge'),
+            llmRequestPreview: document.getElementById('llm-request-preview'),
+            llmTokenChips: document.getElementById('llm-token-chips'),
+            llmRequestRaw: document.getElementById('llm-request-raw'),
+            llmResponsePreview: document.getElementById('llm-response-preview'),
+            llmActions: document.getElementById('llm-actions'),
+            llmResponseRaw: document.getElementById('llm-response-raw'),
+            traceRmText: document.getElementById('trace-rm-text'),
+            toast: document.getElementById('toast')
+        };
+
+        const demoState = {
+            stepIndex: 0,
+            isPlaying: false,
+            isPaused: false,
+            speedMs: 900,
+            artifacts: null,
+            scoreReady: false,
+            rmReady: false,
+            activeTraceId: null,
+            openedTraceKeys: new Set(),
+            manualMode: false
+        };
+
+        const flowOrder = [
+            'input',
+            'mask',
+            'cloud',
+            'decision',
+            'decisionResult',
+            'tokenization',
+            'llmRequest',
+            'llmResponse',
+            'rm'
+        ];
+        const traceMap = {
+            input: elements.traceInput,
+            mask: elements.traceMask,
+            cloud: elements.traceCloud,
+            decision: elements.traceDecision,
+            decisionResult: elements.traceDecisionResult,
+            tokenization: elements.traceTokenization,
+            llmRequest: elements.traceLlmRequest,
+            llmResponse: elements.traceLlmResponse,
+            rm: elements.traceRm
+        };
+
+        const steps = [
+            stepInitialJson,
+            stepMasking,
+            stepCloudPipeline,
+            stepDecisionEngine,
+            stepDecisionResult,
+            stepTokenization,
+            stepLLMRequest,
+            stepLLMResponse,
+            stepRMWorkbench
+        ];
+
+        function truncate(value, keep = 12) {
+            if (!value) return '--';
+            const str = String(value);
+            if (str.length <= keep * 2) return str;
+            return `${str.slice(0, keep)}...${str.slice(-keep)}`;
+        }
+
+        function prettyCurrency(amount, currency) {
+            if (amount === undefined || amount === null) return '--';
+            try {
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: currency || 'USD',
+                    maximumFractionDigits: 2
+                }).format(amount);
+            } catch (e) {
+                return `${amount} ${currency || ''}`.trim();
+            }
+        }
+
+        function showToast(message) {
+            elements.toast.textContent = message;
+            elements.toast.classList.add('show');
+            clearTimeout(elements.toast._timer);
+            elements.toast._timer = setTimeout(() => elements.toast.classList.remove('show'), 2000);
+        }
+
+        function isDevMode() {
+            return document.body.dataset.dev === 'on';
+        }
+
+        function setStatus(text, type) {
+            elements.statusPill.textContent = text;
+            elements.statusPill.className = `status-pill ${type || ''}`.trim();
+        }
+
+        function setFlowActive(key) {
+            const activeIndex = flowOrder.indexOf(key);
+            elements.flowSteps.forEach(step => {
+                const index = flowOrder.indexOf(step.dataset.flow);
+                step.classList.toggle('active', index === activeIndex && activeIndex !== -1);
+                step.classList.toggle('completed', activeIndex !== -1 && index < activeIndex);
+            });
+        }
+
+        function closeAllTrace() {
+            Object.values(traceMap).forEach(item => {
+                if (item) {
+                    item.open = false;
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        function setTraceActive(key) {
+            demoState.activeTraceId = key;
+            demoState.openedTraceKeys.add(key);
+            Object.values(traceMap).forEach(item => {
+                if (item) {
+                    item.classList.remove('active');
+                }
+            });
+            if (!isDevMode()) return;
+            const target = traceMap[key];
+            if (target) {
+                target.open = true;
+                target.classList.add('active');
+            }
+        }
+
+        function syncTraceOpen() {
+            if (!isDevMode()) return;
+            demoState.openedTraceKeys.forEach(key => {
+                const target = traceMap[key];
+                if (target) {
+                    target.open = true;
+                }
+            });
+            if (demoState.activeTraceId && traceMap[demoState.activeTraceId]) {
+                traceMap[demoState.activeTraceId].classList.add('active');
+            }
+        }
+
+        function renderChips(container, items) {
+            container.innerHTML = '';
+            if (!items || !items.length) return;
+            items.forEach(item => {
+                const chip = document.createElement('span');
+                chip.className = 'chip';
+                chip.textContent = item;
+                container.appendChild(chip);
+            });
+        }
+
+        function highlightTokens(text) {
+            if (!text) return '--';
+            return text.replace(ENC_TOKEN_REGEX, token => `<span class="token-pill">${truncate(token, 10)}</span>`);
+        }
+
+        function detectPlaintextLeak(original, maskedText) {
+            if (!original || !maskedText) return false;
+            const candidates = [
+                original.full_name,
+                original.phone,
+                original.email,
+                original.billing_address,
+                original.card_pan,
+                original.card_expiry,
+                original.merchant_name,
+                original.transaction_ts,
+                original.amount?.toString()
+            ].filter(Boolean);
+
+            const text = maskedText.toLowerCase();
+            return candidates.some(value => text.includes(String(value).toLowerCase()));
+        }
+
+        function setPlaintextBadge(leakDetected) {
+            elements.llmPlaintextBadge.className = leakDetected ? 'badge badge-danger' : 'badge badge-ok';
+            elements.llmPlaintextBadge.textContent = leakDetected ? 'Plaintext detected' : '0 plaintext detected';
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderTokenizedString(value, tokenClass) {
+            const regex = new RegExp(ENC_TOKEN_REGEX.source, 'g');
+            const parts = [];
+            let lastIndex = 0;
+            let match;
+            while ((match = regex.exec(value)) !== null) {
+                const before = value.slice(lastIndex, match.index);
+                parts.push(escapeHtml(before));
+                parts.push(`<span class="${tokenClass}">${escapeHtml(match[0])}</span>`);
+                lastIndex = match.index + match[0].length;
+            }
+            parts.push(escapeHtml(value.slice(lastIndex)));
+            return parts.join('');
+        }
+
+        function classifyKey(key) {
+            const piiExtra = ['token', 'token_customer_id', 'masked_customer_id'];
+            if (PII_FIELDS.includes(key) || piiExtra.includes(key)) return 'json-pii';
+            if (NUMERIC_FIELDS.includes(key)) return 'json-numeric';
+            if (CATEGORICAL_FIELDS.includes(key)) return 'json-categorical';
+            return '';
+        }
+
+        function renderValue(value, indent, keyClass, inheritedClass) {
+            const pad = ' '.repeat(indent);
+            const activeClass = inheritedClass || keyClass || '';
+            if (value === null) return 'null';
+            if (Array.isArray(value)) {
+                if (!value.length) return '[]';
+                const items = value.map((item, idx) => {
+                    const comma = idx < value.length - 1 ? ',' : '';
+                    return `${pad}  ${renderValue(item, indent + 2, activeClass, activeClass)}${comma}`;
+                });
+                return `[\n${items.join('\n')}\n${pad}]`;
+            }
+            if (typeof value === 'object') {
+                return renderObject(value, indent, activeClass);
+            }
+            if (typeof value === 'string') {
+                const tokenClass = inheritedClass || keyClass || 'json-pii';
+                const tokenized = renderTokenizedString(value, tokenClass);
+                const wrapped = `"${tokenized}"`;
+                return activeClass ? `<span class="${activeClass}">${wrapped}</span>` : wrapped;
+            }
+            if (typeof value === 'number') {
+                const raw = String(value);
+                return activeClass ? `<span class="${activeClass}">${raw}</span>` : raw;
+            }
+            if (typeof value === 'boolean') {
+                return value ? 'true' : 'false';
+            }
+            return escapeHtml(String(value));
+        }
+
+        function renderObject(obj, indent, inheritedClass) {
+            const pad = ' '.repeat(indent);
+            const keys = Object.keys(obj);
+            if (!keys.length) return '{}';
+            const lines = keys.map((key, idx) => {
+                const forcedClass = inheritedClass || (key === '_fraud_scoring' ? 'json-added' : '');
+                const keyClass = forcedClass || classifyKey(key);
+                const keyHtml = keyClass
+                    ? `<span class="${keyClass}">"${escapeHtml(key)}"</span>`
+                    : `"${escapeHtml(key)}"`;
+                const comma = idx < keys.length - 1 ? ',' : '';
+                return `${pad}  ${keyHtml}: ${renderValue(obj[key], indent + 2, keyClass, forcedClass)}${comma}`;
+            });
+            return `{\n${lines.join('\n')}\n${pad}}`;
+        }
+
+        function renderHighlightedJson(data) {
+            if (data === null || data === undefined) return 'null';
+            if (Array.isArray(data)) return renderValue(data, 0, '');
+            if (typeof data === 'object') return renderObject(data, 0);
+            return renderValue(data, 0, '');
+        }
+
+        function renderJson(target, data) {
+            target.innerHTML = renderHighlightedJson(data);
+        }
+
+        function renderDiff(original, masked) {
+            elements.traceMaskDiff.innerHTML = '';
+            const rows = [];
+            const changes = [...PII_FIELDS, ...NUMERIC_FIELDS, ...CATEGORICAL_FIELDS];
+            changes.forEach(field => {
+                const originalValue = original[field];
+                const maskedValue = masked[field];
+                if (originalValue === undefined || maskedValue === undefined) return;
+                if (originalValue === maskedValue) return;
+                rows.push({ field, originalValue, maskedValue });
+            });
+
+            if (!rows.length) {
+                elements.traceMaskDiff.textContent = 'No changes detected.';
+                return;
+            }
+
+            rows.forEach(item => {
+                const meta = getClassificationMeta(item.field);
+                const row = document.createElement('div');
+                row.className = 'diff-row';
+                row.innerHTML = `
+                    <div class="diff-left">
+                        <div class="diff-label">${item.field}</div>
+                        <div class="diff-values">
+                            <span>${item.originalValue}</span>
+                            <span class="diff-arrow">→</span>
+                            <span>${PII_FIELDS.includes(item.field) ? truncate(item.maskedValue, 8) : item.maskedValue}</span>
+                        </div>
+                    </div>
+                    <div class="diff-right">
+                        <div class="meta-badges">
+                            <span class="meta-chip meta-class">Classification: ${meta.classification}</span>
+                            <span class="meta-chip meta-sensitivity">Sensitivity: ${meta.sensitivity}</span>
+                            <span class="meta-chip meta-control">Control: ${meta.control}</span>
+                        </div>
+                        <div class="meta-row">
+                            <div class="meta-label">State</div>
+                            <div class="meta-value">${meta.state}</div>
+                        </div>
+                        <div class="meta-row">
+                            <div class="meta-label">Handling</div>
+                            <div class="meta-value">${meta.handling}</div>
+                        </div>
+                    </div>
+                `;
+                elements.traceMaskDiff.appendChild(row);
+            });
+        }
+
+        function getClassificationMeta(field) {
+            const defaults = {
+                classification: 'Internal',
+                sensitivity: 'Internal',
+                control: 'None',
+                state: 'Raw',
+                handling: 'Access: Internal. Allowed: model training. Prohibited: public sharing.'
+            };
+
+            const map = {
+                full_name: {
+                    classification: 'Personal Data (Direct Identifier)',
+                    sensitivity: 'Restricted',
+                    control: 'AES-256-SIV deterministic encryption',
+                    state: 'Pseudonymized',
+                    handling: 'Access: Fraud/RM. Allowed: scoring, explainability. Prohibited: logs, exports.'
+                },
+                phone: {
+                    classification: 'Personal Data (Direct Identifier)',
+                    sensitivity: 'Restricted',
+                    control: 'AES-256-SIV deterministic encryption',
+                    state: 'Pseudonymized',
+                    handling: 'Access: Fraud/RM. Allowed: scoring, explainability. Prohibited: logs, exports.'
+                },
+                email: {
+                    classification: 'Personal Data (Direct Identifier)',
+                    sensitivity: 'Restricted',
+                    control: 'AES-256-SIV deterministic encryption',
+                    state: 'Pseudonymized',
+                    handling: 'Access: Fraud/RM. Allowed: scoring, explainability. Prohibited: logs, exports.'
+                },
+                billing_address: {
+                    classification: 'Personal Data (Direct Identifier)',
+                    sensitivity: 'Restricted',
+                    control: 'AES-256-SIV deterministic encryption',
+                    state: 'Pseudonymized',
+                    handling: 'Access: Fraud/RM. Allowed: scoring, explainability. Prohibited: logs, exports.'
+                },
+                customer_id: {
+                    classification: 'Personal Data (Identifier)',
+                    sensitivity: 'Restricted',
+                    control: 'AES-256-SIV deterministic encryption',
+                    state: 'Pseudonymized',
+                    handling: 'Access: Fraud/RM. Allowed: scoring, explainability. Prohibited: logs, exports.'
+                },
+                card_pan: {
+                    classification: 'PCI / Cardholder Data',
+                    sensitivity: 'Restricted (Highest)',
+                    control: 'AES-256-SIV deterministic encryption',
+                    state: 'Pseudonymized (PCI)',
+                    handling: 'Access: PCI-controlled. Allowed: fraud controls. Prohibited: logs, exports.'
+                },
+                card_expiry: {
+                    classification: 'PCI / Cardholder Data',
+                    sensitivity: 'Restricted (Highest)',
+                    control: 'AES-256-SIV deterministic encryption',
+                    state: 'Pseudonymized (PCI)',
+                    handling: 'Access: PCI-controlled. Allowed: fraud controls. Prohibited: logs, exports.'
+                },
+                ip_address: {
+                    classification: 'Personal Data (Online Identifier)',
+                    sensitivity: 'Confidential',
+                    control: 'AES-256-SIV deterministic encryption',
+                    state: 'Pseudonymized',
+                    handling: 'Access: Fraud/Analytics. Allowed: modeling. Prohibited: logs, exports.'
+                },
+                device_id: {
+                    classification: 'Personal Data (Online Identifier)',
+                    sensitivity: 'Confidential',
+                    control: 'AES-256-SIV deterministic encryption',
+                    state: 'Pseudonymized',
+                    handling: 'Access: Fraud/Analytics. Allowed: modeling. Prohibited: logs, exports.'
+                },
+                amount: {
+                    classification: 'Financial / Account Data',
+                    sensitivity: 'Confidential',
+                    control: 'Scaling (model transform; not privacy)',
+                    state: 'Transformed (reversible)',
+                    handling: 'Access: Fraud/Analytics. Allowed: modeling. Prohibited: public sharing.'
+                },
+                available_balance: {
+                    classification: 'Financial / Account Data',
+                    sensitivity: 'Confidential',
+                    control: 'Scaling (model transform; not privacy)',
+                    state: 'Transformed (reversible)',
+                    handling: 'Access: Fraud/Analytics. Allowed: modeling. Prohibited: public sharing.'
+                },
+                credit_limit: {
+                    classification: 'Financial / Account Data',
+                    sensitivity: 'Confidential',
+                    control: 'Scaling (model transform; not privacy)',
+                    state: 'Transformed (reversible)',
+                    handling: 'Access: Fraud/Analytics. Allowed: modeling. Prohibited: public sharing.'
+                },
+                mcc: {
+                    classification: 'Transaction Metadata',
+                    sensitivity: 'Internal',
+                    control: 'Deterministic mapping',
+                    state: 'Mapped',
+                    handling: 'Access: Analytics. Allowed: modeling. Prohibited: public sharing.'
+                },
+                channel: {
+                    classification: 'Transaction Metadata',
+                    sensitivity: 'Internal',
+                    control: 'Deterministic mapping',
+                    state: 'Mapped',
+                    handling: 'Access: Analytics. Allowed: modeling. Prohibited: public sharing.'
+                }
+            };
+
+            return map[field] || defaults;
+        }
+
+        function buildTokenizationRows() {
+            const original = demoState.artifacts.original_transaction;
+            const result = demoState.artifacts.cloud_result;
+            const tokens = demoState.artifacts.llm_request_masked.tokens || [];
+            const valueMap = {
+                customer_name: original.full_name,
+                customer_phone: original.phone,
+                customer_email: original.email,
+                amount: original.amount,
+                merchant_name: original.merchant_name,
+                transaction_ts: original.transaction_ts,
+                fraud_probability: result.fraud_probability
+            };
+            return tokens.map(item => ({
+                field: item.field,
+                originalValue: valueMap[item.field] ?? '--',
+                tokenValue: item.token
+            }));
+        }
+
+        function renderTokenizationDiff() {
+            elements.traceTokenizationDiff.innerHTML = '';
+            const rows = buildTokenizationRows();
+            if (!rows.length) {
+                elements.traceTokenizationDiff.textContent = 'No tokenization data.';
+                return;
+            }
+
+            rows.forEach(item => {
+                let method = 'Deterministic ENC token';
+                if (['customer_name', 'customer_phone', 'customer_email'].includes(item.field)) {
+                    method = 'PII: AES-256-SIV deterministic token';
+                } else if (['amount', 'fraud_probability'].includes(item.field)) {
+                    method = 'Numeric: AES-256-SIV deterministic token';
+                } else if (item.field === 'merchant_name' || item.field === 'transaction_ts') {
+                    method = 'Sensitive: AES-256-SIV deterministic token';
+                }
+
+                const row = document.createElement('div');
+                row.className = 'diff-row';
+                row.innerHTML = `
+                    <div class="diff-left">
+                        <div class="diff-label">${item.field}</div>
+                        <div class="diff-values">
+                            <span>${item.originalValue}</span>
+                            <span class="diff-arrow">→</span>
+                            <span>${truncate(item.tokenValue, 10)}</span>
+                        </div>
+                    </div>
+                    <div class="diff-right">${method}</div>
+                `;
+                elements.traceTokenizationDiff.appendChild(row);
+            });
+        }
+
+        function updateRMHeader() {
+            if (!demoState.rmReady) {
+                elements.rmTransactionId.textContent = '--';
+                elements.rmTimestamp.textContent = '--';
+                elements.rmCustomer.textContent = '--';
+                elements.rmMerchant.textContent = '--';
+                elements.rmAmount.textContent = '--';
+                elements.rmChannel.textContent = '--';
+                elements.rmCountry.textContent = '--';
+                elements.rmScore.textContent = '--';
+                elements.rmRiskLabel.textContent = 'Awaiting scoring';
+                renderChips(elements.rmReasons, []);
+                return;
+            }
+
+            const original = demoState.artifacts ? demoState.artifacts.original_transaction : SAMPLE_TRANSACTION;
+            elements.rmTransactionId.textContent = original.transaction_id || '--';
+            elements.rmTimestamp.textContent = original.transaction_ts || '--';
+            elements.rmCustomer.textContent = original.full_name || original.customer_id || '--';
+            elements.rmMerchant.textContent = original.merchant_name || '--';
+            elements.rmAmount.textContent = prettyCurrency(original.amount, original.currency);
+            elements.rmChannel.textContent = original.channel || '--';
+            const country = original.merchant_country || '--';
+            const currency = original.currency || '--';
+            elements.rmCountry.textContent = `${country} / ${currency}`;
+
+            if (demoState.artifacts && demoState.scoreReady) {
+                const score = demoState.artifacts.cloud_result.fraud_probability;
+                const scorePct = Math.round(score * 100);
+                elements.rmScore.textContent = `${scorePct}%`;
+                elements.rmRiskLabel.textContent = score < 0.3 ? 'LOW RISK' : score < 0.7 ? 'MEDIUM RISK' : 'HIGH RISK';
+                renderChips(elements.rmReasons, demoState.artifacts.cloud_result.reason_codes);
+            } else {
+                elements.rmScore.textContent = '--';
+                elements.rmRiskLabel.textContent = 'Awaiting scoring';
+                renderChips(elements.rmReasons, []);
+            }
+        }
+
+        function updateDecisionCard() {
+            if (!demoState.artifacts || !demoState.scoreReady) {
+                elements.decisionScore.textContent = '--';
+                elements.decisionLabel.textContent = 'Awaiting scoring';
+                elements.decisionPreview.textContent = 'No payload yet.';
+                renderChips(elements.decisionReasons, []);
+                return;
+            }
+
+            const result = demoState.artifacts.cloud_result;
+            const scorePct = Math.round(result.fraud_probability * 100);
+            elements.decisionScore.textContent = `${scorePct}%`;
+            elements.decisionLabel.textContent = result.fraud_probability < 0.3 ? 'LOW RISK' : result.fraud_probability < 0.7 ? 'MEDIUM RISK' : 'HIGH RISK';
+            renderChips(elements.decisionReasons, result.reason_codes);
+            const preview = {
+                transaction_id: demoState.artifacts.original_transaction.transaction_id,
+                token_customer_id: result.masked_customer_id,
+                fraud_probability: result.fraud_probability,
+                reason_codes: result.reason_codes
+            };
+            elements.decisionPreview.textContent = JSON.stringify(preview);
+        }
+
+        function renderTraceInput() {
+            renderJson(elements.traceInputJson, demoState.artifacts.original_transaction);
+        }
+
+        function renderTraceMask() {
+            const masked = demoState.artifacts.masked_transaction_for_cloud;
+            renderDiff(demoState.artifacts.original_transaction, masked);
+            renderJson(elements.traceMaskJson, masked);
+        }
+
+        function renderTraceCloud() {
+            renderJson(elements.traceCloudPayload, demoState.artifacts.cloud_payload);
+            renderJson(elements.traceCloudResult, demoState.artifacts.cloud_result);
+        }
+
+        function renderTraceDecision() {
+            renderJson(elements.traceDecisionPayload, demoState.artifacts.decision_engine_payload);
+        }
+
+        function buildDecisionResult() {
+            const result = demoState.artifacts.cloud_result;
+            const decision = result.fraud_probability >= 0.7 ? 'REVIEW' : result.fraud_probability >= 0.3 ? 'STEP_UP' : 'APPROVE';
+            return {
+                decision,
+                risk_level: decision === 'REVIEW' ? 'HIGH' : decision === 'STEP_UP' ? 'MEDIUM' : 'LOW',
+                token_customer_id: result.masked_customer_id,
+                fraud_probability: result.fraud_probability,
+                reason_codes: result.reason_codes
+            };
+        }
+
+        function renderDecisionResult() {
+            renderJson(elements.traceDecisionResultJson, buildDecisionResult());
+        }
+
+        function renderTokenization() {
+            const request = demoState.artifacts.llm_request_masked;
+            const tokenization = {
+                tokenization_map: request.tokens,
+                token_count: request.tokens.length
+            };
+            renderTokenizationDiff();
+            renderJson(elements.traceTokenizationJson, tokenization);
+        }
+
+        function renderLLMRequest() {
+            const request = demoState.artifacts.llm_request_masked;
+            elements.llmRequestPreview.innerHTML = highlightTokens(request.prompt);
+            renderJson(elements.llmRequestRaw, request);
+            elements.llmTokenChips.innerHTML = '';
+            request.tokens.forEach(item => {
+                const chip = document.createElement('button');
+                chip.className = 'chip chip-token';
+                chip.textContent = `${item.field}: ${truncate(item.token, 6)}`;
+                chip.dataset.copyValue = item.token;
+                elements.llmTokenChips.appendChild(chip);
+            });
+            const leakDetected = detectPlaintextLeak(demoState.artifacts.original_transaction, request.prompt);
+            setPlaintextBadge(leakDetected);
+        }
+
+        function renderLLMResponse() {
+            const response = demoState.artifacts.llm_response_masked;
+            elements.llmResponsePreview.innerHTML = highlightTokens(response.rm_explanation_masked);
+            renderJson(elements.llmResponseRaw, response);
+            elements.llmActions.innerHTML = '';
+            response.recommended_actions_masked.forEach(action => {
+                const li = document.createElement('li');
+                li.innerHTML = highlightTokens(action);
+                elements.llmActions.appendChild(li);
+            });
+            const combinedText = `${response.rm_explanation_masked} ${response.recommended_actions_masked.join(' ')}`;
+            const leakDetected = detectPlaintextLeak(demoState.artifacts.original_transaction, combinedText);
+            setPlaintextBadge(leakDetected);
+        }
+
+        function renderRMWorkbench() {
+            if (!demoState.rmReady) {
+                elements.rmNote.textContent = 'Awaiting final RM output.';
+                elements.traceRmText.textContent = '';
+                elements.rmActions.innerHTML = '';
+                return;
+            }
+
+            const unmasked = demoState.artifacts.llm_response_unmasked;
+            if (unmasked) {
+                elements.rmNote.textContent = unmasked.rm_explanation;
+                elements.traceRmText.textContent = unmasked.rm_explanation;
+                elements.rmActions.innerHTML = '';
+                unmasked.recommended_actions.forEach(action => {
+                    const li = document.createElement('li');
+                    li.textContent = action;
+                    elements.rmActions.appendChild(li);
+                });
+            } else {
+                elements.rmNote.textContent = 'Unmasking disabled on server.';
+                elements.traceRmText.textContent = 'Unmasking disabled on server.';
+                elements.rmActions.innerHTML = '';
+            }
+        }
+
+        async function loadArtifacts(payload) {
+            const response = await fetch('/v1/demo/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transaction: payload })
+            });
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to load demo artifacts');
+            }
+            demoState.artifacts = await response.json();
+            updateRMHeader();
+        }
+
+        async function sleep(ms) {
+            let elapsed = 0;
+            while (elapsed < ms) {
+                if (demoState.isPaused) {
+                    await new Promise(resolve => demoState._resume = resolve);
+                }
+                const chunk = Math.min(120, ms - elapsed);
+                await new Promise(resolve => setTimeout(resolve, chunk));
+                elapsed += chunk;
+            }
+        }
+
+        async function stepInitialJson() {
+            setStatus('Running · Input', 'processing');
+            setFlowActive('input');
+            setTraceActive('input');
+            renderTraceInput();
+            await sleep(demoState.speedMs);
+        }
+
+        async function stepMasking() {
+            setStatus('Running · Masking', 'processing');
+            setFlowActive('mask');
+            setTraceActive('mask');
+            renderTraceMask();
+            await sleep(demoState.speedMs);
+        }
+
+        async function stepCloudPipeline() {
+            setStatus('Running · Cloud Score', 'processing');
+            setFlowActive('cloud');
+            setTraceActive('cloud');
+            renderTraceCloud();
+            demoState.scoreReady = true;
+            updateRMHeader();
+            await sleep(demoState.speedMs);
+        }
+
+        async function stepDecisionEngine() {
+            setStatus('Running · Decision', 'processing');
+            setFlowActive('decision');
+            setTraceActive('decision');
+            updateDecisionCard();
+            renderTraceDecision();
+            await sleep(demoState.speedMs);
+        }
+
+        async function stepDecisionResult() {
+            setStatus('Running · Decision Result', 'processing');
+            setFlowActive('decisionResult');
+            setTraceActive('decisionResult');
+            renderDecisionResult();
+            await sleep(demoState.speedMs);
+        }
+
+        async function stepTokenization() {
+            setStatus('Running · Tokenization', 'processing');
+            setFlowActive('tokenization');
+            setTraceActive('tokenization');
+            renderTokenization();
+            await sleep(demoState.speedMs);
+        }
+
+        async function stepLLMRequest() {
+            setStatus('Running · LLM Request', 'processing');
+            setFlowActive('llmRequest');
+            setTraceActive('llmRequest');
+            renderLLMRequest();
+            await sleep(demoState.speedMs);
+        }
+
+        async function stepLLMResponse() {
+            setStatus('Running · LLM Response', 'processing');
+            setFlowActive('llmResponse');
+            setTraceActive('llmResponse');
+            renderLLMResponse();
+            await sleep(demoState.speedMs);
+        }
+
+        async function stepRMWorkbench() {
+            setStatus('Running · RM Workbench', 'processing');
+            setFlowActive('rm');
+            setTraceActive('rm');
+            demoState.rmReady = true;
+            updateRMHeader();
+            renderRMWorkbench();
+            await sleep(demoState.speedMs);
+            setStatus('Completed', 'success');
+        }
+
+        async function playDemo() {
+            if (demoState.isPlaying) return;
+            if (demoState.manualMode) {
+                setStatus('Manual mode', '');
+                return;
+            }
+            demoState.isPlaying = true;
+            demoState.isPaused = false;
+            elements.playBtn.disabled = true;
+            elements.nextBtn.disabled = true;
+
+            try {
+                if (!demoState.artifacts) {
+                    await loadArtifacts(SAMPLE_TRANSACTION);
+                }
+
+                while (demoState.isPlaying && demoState.stepIndex < steps.length) {
+                    await steps[demoState.stepIndex]();
+                    demoState.stepIndex += 1;
+                }
+            } catch (error) {
+                showError(error.message || 'Playback failed');
+            } finally {
+                demoState.isPlaying = false;
+                elements.playBtn.disabled = demoState.manualMode;
+                elements.nextBtn.disabled = false;
+            }
+        }
+
+        async function runNextStep() {
+            if (demoState.isPlaying) return;
+            elements.playBtn.disabled = true;
+            try {
+                if (!demoState.artifacts) {
+                    await loadArtifacts(SAMPLE_TRANSACTION);
+                }
+                if (demoState.stepIndex < steps.length) {
+                    await steps[demoState.stepIndex]();
+                    demoState.stepIndex += 1;
+                }
+            } catch (error) {
+                showError(error.message || 'Playback failed');
+            } finally {
+                elements.playBtn.disabled = demoState.manualMode;
+            }
+        }
+
+        async function startManualDemo() {
+            if (demoState.isPlaying) return;
+            if (!demoState.manualMode) {
+                demoState.manualMode = true;
+                elements.manualToggle.checked = true;
+                document.body.dataset.manual = 'on';
+            }
+            resetDemo();
+            await runToStep(0);
+        }
+
+        async function runToStep(targetIndex) {
+            if (!demoState.manualMode || demoState.isPlaying) return;
+            if (Number.isNaN(targetIndex) || targetIndex < 0 || targetIndex >= steps.length) return;
+            elements.playBtn.disabled = true;
+            elements.nextBtn.disabled = true;
+            try {
+                if (targetIndex < demoState.stepIndex) {
+                    resetDemo();
+                }
+                if (!demoState.artifacts) {
+                    await loadArtifacts(SAMPLE_TRANSACTION);
+                }
+                while (demoState.stepIndex <= targetIndex && demoState.stepIndex < steps.length) {
+                    await steps[demoState.stepIndex]();
+                    demoState.stepIndex += 1;
+                }
+            } catch (error) {
+                showError(error.message || 'Playback failed');
+            } finally {
+                elements.playBtn.disabled = demoState.manualMode;
+                elements.nextBtn.disabled = false;
+            }
+        }
+
+        function resetDemo() {
+            demoState.stepIndex = 0;
+            demoState.isPlaying = false;
+            demoState.isPaused = false;
+            demoState.artifacts = null;
+            demoState.scoreReady = false;
+            demoState.rmReady = false;
+            demoState.activeTraceId = null;
+            demoState.openedTraceKeys = new Set();
+            elements.pauseBtn.textContent = '⏸ Pause';
+            setStatus('Idle', '');
+            setFlowActive('');
+            closeAllTrace();
+            elements.playBtn.disabled = demoState.manualMode;
+            elements.errorBanner.style.display = 'none';
+            elements.decisionScore.textContent = '--';
+            elements.decisionLabel.textContent = 'Awaiting scoring';
+            elements.decisionPreview.textContent = 'No payload yet.';
+            renderChips(elements.decisionReasons, []);
+            elements.rmNote.textContent = 'Awaiting de-anonymized note.';
+            elements.rmActions.innerHTML = '';
+            elements.traceInputJson.textContent = '';
+            elements.traceMaskJson.textContent = '';
+            elements.traceMaskDiff.innerHTML = '';
+            elements.traceCloudPayload.textContent = '';
+            elements.traceCloudResult.textContent = '';
+            elements.traceDecisionPayload.textContent = '';
+            elements.traceDecisionResultJson.textContent = '';
+            elements.traceTokenizationDiff.innerHTML = '';
+            elements.traceTokenizationJson.textContent = '';
+            elements.llmRequestPreview.textContent = '';
+            elements.llmTokenChips.innerHTML = '';
+            elements.llmRequestRaw.textContent = '';
+            elements.llmResponsePreview.textContent = '';
+            elements.llmActions.innerHTML = '';
+            elements.llmResponseRaw.textContent = '';
+            elements.traceRmText.textContent = '';
+            setPlaintextBadge(false);
+            updateRMHeader();
+        }
+
+        function showError(message) {
+            elements.errorBanner.textContent = message;
+            elements.errorBanner.style.display = 'block';
+            setStatus('Error', 'error');
+        }
+
+        function togglePause() {
+            if (!demoState.isPlaying) return;
+            demoState.isPaused = !demoState.isPaused;
+            elements.pauseBtn.textContent = demoState.isPaused ? '▶ Resume' : '⏸ Pause';
+            if (!demoState.isPaused && demoState._resume) {
+                demoState._resume();
+                demoState._resume = null;
+            }
+        }
+
+        function copyPayload(key) {
+            if (!demoState.artifacts) return;
+            let value = '';
+            if (key === 'cloud-payload') value = JSON.stringify(demoState.artifacts.cloud_payload, null, 2);
+            if (key === 'cloud-result') value = JSON.stringify(demoState.artifacts.cloud_result, null, 2);
+            if (key === 'decision-payload') value = JSON.stringify(demoState.artifacts.decision_engine_payload, null, 2);
+            if (key === 'llm-request') value = JSON.stringify(demoState.artifacts.llm_request_masked, null, 2);
+            if (key === 'llm-response') value = JSON.stringify(demoState.artifacts.llm_response_masked, null, 2);
+            if (!value) return;
+            navigator.clipboard.writeText(value).then(() => {
+                showToast('Copied to clipboard');
+            });
+        }
+
+        function toggleRmNote() {
+            elements.rmNote.classList.toggle('expanded');
+            elements.rmNoteToggle.textContent = elements.rmNote.classList.contains('expanded') ? 'Collapse' : 'Expand';
+        }
+
+        elements.playBtn.addEventListener('click', playDemo);
+        elements.pauseBtn.addEventListener('click', togglePause);
+        elements.nextBtn.addEventListener('click', runNextStep);
+        elements.resetBtn.addEventListener('click', resetDemo);
+        elements.speedSelect.addEventListener('change', (event) => {
+            demoState.speedMs = Number(event.target.value);
+        });
+
+        elements.devToggle.addEventListener('change', (event) => {
+            document.body.dataset.dev = event.target.checked ? 'on' : '';
+            if (event.target.checked) {
+                syncTraceOpen();
+            }
+        });
+
+        elements.manualToggle.addEventListener('change', (event) => {
+            if (demoState.isPlaying) {
+                event.target.checked = demoState.manualMode;
+                return;
+            }
+            demoState.manualMode = event.target.checked;
+            document.body.dataset.manual = demoState.manualMode ? 'on' : '';
+            elements.playBtn.disabled = demoState.manualMode;
+            if (demoState.manualMode && !demoState.isPlaying) {
+                setStatus('Manual mode', '');
+            } else if (!demoState.isPlaying && demoState.stepIndex === 0) {
+                setStatus('Idle', '');
+            }
+        });
+
+        elements.manualStartBtn.addEventListener('click', startManualDemo);
+
+        elements.rmNoteToggle.addEventListener('click', toggleRmNote);
+
+        document.addEventListener('click', (event) => {
+            const stepButton = event.target.closest('[data-step]');
+            if (stepButton) {
+                runToStep(Number(stepButton.dataset.step));
+                return;
+            }
+            const copyTarget = event.target.closest('[data-copy]');
+            if (copyTarget) {
+                copyPayload(copyTarget.dataset.copy);
+            }
+            const chip = event.target.closest('[data-copy-value]');
+            if (chip) {
+                navigator.clipboard.writeText(chip.dataset.copyValue).then(() => {
+                    showToast('Token copied');
+                });
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateRMHeader();
+            demoState.manualMode = elements.manualToggle.checked;
+            document.body.dataset.manual = demoState.manualMode ? 'on' : '';
+            elements.playBtn.disabled = demoState.manualMode;
+        });
+    </script>
+</body>
+</html>
