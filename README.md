@@ -373,7 +373,6 @@ $$
 
 ### Categorical fields
 - **MCC**: bijective permutation 0-9999 by seed
-- **Channel**: fixed mapping (POS→CH_ALPHA, etc.)
 
 Visual (seeded bijection for MCC):
 
@@ -391,6 +390,8 @@ Example (illustrative; actual values depend on CAT_SEED):
 How to read the scatterplot: each dot is a one-to-one mapping from original MCC (x-axis)
 to masked MCC (y-axis). A perfect diagonal would mean no masking; the scattered pattern
 shows a permutation while preserving a bijection (no collisions).
+
+- **Channel**: fixed mapping (POS→CH_ALPHA, etc.)
 
 ## 📁 Project structure
 
