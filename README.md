@@ -3,7 +3,6 @@
 On-prem privacy-by-design pipeline for fraud analytics and RM explainability:
 mask sensitive fields, score in the cloud on masked features, decide on-prem, and generate RM notes via an LLM without sending plaintext to the LLM.
 
-Russian version: `README.ru.md`
 
 ## Executive Summary
 
@@ -58,7 +57,7 @@ flowchart LR
   Svc -->|"unmask_text() on-prem only"| RM
 ```
 
-## What Goes Where (Non-Technical View)
+## What Goes Where 
 
 | Destination | Payload type | Plaintext PII/PCI | What it enables |
 |---|---|---|---|
@@ -151,7 +150,7 @@ $$
 
 ### 3) Categorical: MCC Permutation + Channel Mapping
 
-MCC (bijective permutation by seed):
+#### MCC (bijective permutation by seed):
 
 $$
 m' = \pi_s(m), \quad m = \pi_s^{-1}(m')
@@ -175,7 +174,7 @@ How to read this plot:
 - With a seeded **permutation**, points appear scattered because there is no numeric relationship preserved.
 - The mapping stays reversible (given the same seed), but **category frequencies** can still be learned from masked data.
 
-Channel (fixed reversible mapping):
+#### Channel (fixed reversible mapping):
 
 $$
 c' = f(c), \quad c = f^{-1}(c')
