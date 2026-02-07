@@ -30,7 +30,7 @@ flowchart LR
 
   Svc -->|"Decision payload: original + _fraud_scoring"| DE
 
-  Svc -->|"LLM prompt: [[ENC|...]] tokens only"| LLM
+  Svc -->|"LLM prompt: ENC tokens only"| LLM
   LLM -->|"LLM response: tokens preserved"| Svc
   Svc -->|"unmask_text() on-prem only"| RM
 ```
@@ -112,4 +112,3 @@ sequenceDiagram
 ```
 
 </details>
-

@@ -53,7 +53,7 @@ flowchart LR
 
   Svc -->|"Decision payload: original + _fraud_scoring"| DE
 
-  Svc -->|"LLM prompt: [[ENC|...]] tokens only"| LLM
+  Svc -->|"LLM prompt: ENC tokens only"| LLM
   LLM -->|"LLM response: tokens preserved"| Svc
   Svc -->|"unmask_text() (только on-prem)"| RM
 ```
@@ -74,24 +74,26 @@ flowchart LR
 
 Формулы:
 $$
-C = \\mathrm{Enc}_K(P; AD), \\quad P = \\mathrm{Dec}_K(C; AD)
+C = \mathrm{Enc}_K(P; AD), \quad P = \mathrm{Dec}_K(C; AD)
 $$
 Детерминированность:
 $$
-(P_1 = P_2 \\wedge AD_1 = AD_2) \\Rightarrow (C_1 = C_2)
+(P_1 = P_2 \wedge AD_1 = AD_2) \Rightarrow (C_1 = C_2)
 $$
 Domain separation (разные поля, разный ciphertext):
 $$
-AD = \\texttt{"scb-demo|v1|"} \\Vert \\texttt{field\\_name}
+AD = \texttt{"scb-demo|v1|"} \Vert \texttt{field\_name}
 $$
 
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"fontFamily":"ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial","primaryTextColor":"#0f172a","lineColor":"#64748b","primaryColor":"#ffffff","secondaryColor":"#f1f5f9"}}}%%
 flowchart TB
+  classDef src fill:#f1f5f9,stroke:#64748b,stroke-width:1px,color:#0f172a;
+  classDef tok fill:#e8f3ff,stroke:#2563eb,stroke-width:1px,color:#0f172a;
   subgraph DS["Детерминизм + domain separation (AD = field name)"]
     direction LR
-    A["P = \"Ahmed\"<br/>AD = full_name"] --> B["C1 = Enc_K(P; AD)"]
-    C["P = \"Ahmed\"<br/>AD = email"] --> D["C2 = Enc_K(P; AD)"]
+    A("Value: Ahmed<br/>AD: full_name"):::src --> B("Token C1<br/>(deterministic)"):::tok
+    C("Value: Ahmed<br/>AD: email"):::src --> D("Token C2<br/>(different AD)"):::tok
   end
 ```
 
@@ -101,55 +103,62 @@ flowchart TB
 
 Формулы:
 $$
-\\mathbf{x}' = D\\mathbf{x}, \\quad
+\mathbf{x}' = D\mathbf{x}, \quad
 D =
-\\begin{bmatrix}
-s_1 & 0 & 0 \\\\
-0 & s_2 & 0 \\\\
+\begin{bmatrix}
+s_1 & 0 & 0 \\
+0 & s_2 & 0 \\
 0 & 0 & s_3
-\\end{bmatrix}
+\end{bmatrix}
 $$
 
 Пример:
 $$
-\\mathbf{x} =
-\\begin{bmatrix}
-275.50 \\\\
-18350.75 \\\\
+\mathbf{x} =
+\begin{bmatrix}
+275.50 \\
+18350.75 \\
 50000.00
-\\end{bmatrix},
-\\quad
+\end{bmatrix},
+\quad
 D =
-\\begin{bmatrix}
-1.37 & 0 & 0 \\\\
-0 & 0.83 & 0 \\\\
+\begin{bmatrix}
+1.37 & 0 & 0 \\
+0 & 0.83 & 0 \\
 0 & 0 & 1.11
-\\end{bmatrix},
-\\quad
-\\mathbf{x}' = D\\mathbf{x} =
-\\begin{bmatrix}
-377.435 \\\\
-15231.1225 \\\\
+\end{bmatrix},
+\quad
+\mathbf{x}' = D\mathbf{x} =
+\begin{bmatrix}
+377.435 \\
+15231.1225 \\
 55500.00
-\\end{bmatrix}
+\end{bmatrix}
 $$
 
-![Диагональное масштабирование (пример)](docs/assets/diagonal_scaling.png)
+<p align="center">
+  <img src="docs/assets/diagonal_scaling.png" width="520" alt="Диагональное масштабирование (пример)">
+</p>
 
 ### 3) Категории: перестановка MCC + маппинг Channel
 
 MCC (биективная перестановка по seed):
 $$
-m' = \\pi_s(m), \\quad m = \\pi_s^{-1}(m')
+m' = \pi_s(m), \quad m = \pi_s^{-1}(m')
 $$
 
 ```mermaid
 flowchart LR
-  A["MCC m (0..9999)"] --> B["Permutation pi_s<br/>(seeded by CAT_SEED)"]
-  B --> C["Masked MCC m' (0..9999)"]
+  classDef input fill:#f1f5f9,stroke:#64748b,stroke-width:1px,color:#0f172a;
+  classDef proc fill:#fff7ed,stroke:#d97706,stroke-width:1px,color:#0f172a;
+  classDef output fill:#e8f3ff,stroke:#2563eb,stroke-width:1px,color:#0f172a;
+
+  A("MCC m (0..9999)"):::input --> B("Permutation pi_s(m)<br/>(seeded by CAT_SEED)"):::proc --> C("Masked MCC m' (0..9999)"):::output
 ```
 
-![MCC permutation (sample)](docs/assets/mcc_permutation_scatter.png)
+<p align="center">
+  <img src="docs/assets/mcc_permutation_scatter.png" width="520" alt="MCC permutation (sample)">
+</p>
 
 Как читать этот график:
 - Если `m' = m` (без маскирования), точки лежали бы на диагонали `y = x`.
@@ -158,25 +167,28 @@ flowchart LR
 
 Channel (фиксированный обратимый маппинг):
 $$
-c' = f(c), \\quad c = f^{-1}(c')
+c' = f(c), \quad c = f^{-1}(c')
 $$
 
 ```mermaid
 flowchart LR
-  POS["POS"] --> CHA["CH_ALPHA"]
-  ECOM["ECOM"] --> CHB["CH_BETA"]
-  ATM["ATM"] --> CHG["CH_GAMMA"]
-  MOB["MOB"] --> CHD["CH_DELTA"]
+  classDef src fill:#f1f5f9,stroke:#64748b,stroke-width:1px,color:#0f172a;
+  classDef dst fill:#e8f3ff,stroke:#2563eb,stroke-width:1px,color:#0f172a;
+
+  POS("POS"):::src --> CHA("CH_ALPHA"):::dst
+  ECOM("ECOM"):::src --> CHB("CH_BETA"):::dst
+  ATM("ATM"):::src --> CHG("CH_GAMMA"):::dst
+  MOB("MOB"):::src --> CHD("CH_DELTA"):::dst
 ```
 
 Таблица маппинга:
 
 | Original | Masked |
 |---|---|
-| POS | CH_ALPHA |
-| ECOM | CH_BETA |
-| ATM | CH_GAMMA |
-| MOB | CH_DELTA |
+| <kbd>POS</kbd> | <kbd>CH_ALPHA</kbd> |
+| <kbd>ECOM</kbd> | <kbd>CH_BETA</kbd> |
+| <kbd>ATM</kbd> | <kbd>CH_GAMMA</kbd> |
+| <kbd>MOB</kbd> | <kbd>CH_DELTA</kbd> |
 
 ## LLM Masked Exchange (plaintext не уходит в LLM)
 
