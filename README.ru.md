@@ -1,183 +1,243 @@
-# PII Masking Service
+# PII Masking Service (Demo)
 
-Микросервис для маскирования/анонимизации карточных транзакций перед отправкой в облачную аналитику (Databricks) для антифрод-систем.
+On-prem privacy-by-design pipeline для антифрода и RM explainability:
+маскирование чувствительных полей, скоринг в облаке на masked-признаках, решение on-prem, и генерация RM текста через LLM без отправки plaintext в LLM.
 
-## 🎯 Цель
+English version: `README.md`
 
-Безопасная передача транзакционных данных в облако с сохранением возможности:
-- Обучения ML-моделей
-- Скоринга транзакций
-- JOIN-операций по ключам
-- Аналитики без доступа к PII
+## Кратко (Executive Summary)
 
-## ✨ Возможности
+Этот репозиторий демонстрирует bank-grade подход: **data minimization + deterministic protection controls**.
 
-| Тип данных | Трансформация | Обратимость |
-|------------|---------------|-------------|
-| PII поля | AES-256-SIV шифрование | ✅ |
-| Числовые поля | Диагональная матрица (×scale) | ✅ |
-| MCC | Биективная перестановка | ✅ |
-| Channel | Детерминированный маппинг | ✅ |
+Ключевые гарантии (как реализовано в коде):
+- **Plaintext PII/PCI не уходит в облако** (облако видит только masked features).
+- **Plaintext чувствительных значений не уходит в LLM** (LLM получает только детерминированные `[[ENC|...]]` токены).
+- **Де-маскирование происходит только on-prem**, под флагами.
+- Детерминированность сохраняет **joinability** (одинаковый вход, одинаковый выход).
 
-**Все трансформации детерминированы** — одинаковый вход всегда даёт одинаковый выход.
+## Security & Governance (почему это безопасно)
 
-Дополнительно:
-- ✅ Data Classification на уровне схем (PUBLIC/INTERNAL/CONFIDENTIAL/PII/PCI)
-- ✅ Policy enforcement перед egress в Cloud/LLM
-- ✅ LLM explainability flow с ENC токенами `[[ENC|v1|field|ciphertext]]`
+Это runtime-контроли (не только документация):
 
+- **Data classification** прикреплена к полям схем (в Swagger видно `classification` metadata).
+- **Egress policy enforcement** блокирует plaintext PII/PCI перед отправкой в cloud/LLM: `validate_egress(payload, destination="cloud"|"llm")`.
+- **Проверка LLM prompt** блокирует случайную утечку plaintext в строке prompt (LLM request должен содержать только ENC токены).
+- **Safe logging** редактирует/хеширует чувствительные поля, чтобы plaintext PII/PCI не попадал в логи.
+- **Feature flags для unmask** делают вывод plaintext опциональным (`ENABLE_UNMASK`, `ENABLE_UNMASK_TEXT`).
 
-## 🔐 Безопасность
+## Архитектура (Один Слайд)
 
-### Шифрование PII
-- Алгоритм: **AES-256-SIV** (Synthetic IV)
-- Детерминированный AEAD — одинаковый вход → одинаковый выход
-- Domain separation: разные поля с одинаковым значением дают разный ciphertext
-- Associated Data: `scb-demo|v1|{field_name}`
+```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial","primaryTextColor":"#0f172a","lineColor":"#64748b","noteBkgColor":"#f8fafc","noteTextColor":"#0f172a","primaryColor":"#ffffff","secondaryColor":"#f1f5f9","tertiaryColor":"#fff7ed"}}}%%
+flowchart LR
+  classDef onprem fill:#e8f3ff,stroke:#2563eb,stroke-width:1.3px,color:#0f172a;
+  classDef cloud fill:#fff7ed,stroke:#d97706,stroke-width:1.3px,color:#0f172a;
+  classDef consumer fill:#e9f8ef,stroke:#16a34a,stroke-width:1.3px,color:#0f172a;
+  classDef rm fill:#f3f4f6,stroke:#64748b,stroke-width:1.3px,color:#0f172a;
 
-### ENC токены для LLM
-LLM не получает plaintext данных. Вместо этого в запросе используются токены:
+  subgraph OnPrem["On-Prem (ЦОД банка)"]
+    Source["Источник (Source System)<br/>Сырая транзакция JSON<br/>(PII/PCI plaintext)"]:::onprem
+    Svc["PII Masking Service<br/>mask + policy checks"]:::onprem
+    DE["Decision Engine<br/>(on-prem consumer)"]:::consumer
+    RM["RM Workbench<br/>(финальный plaintext view)"]:::rm
+  end
 
+  subgraph Cloud["Cloud"]
+    DBX["Databricks scoring<br/>(masked features only)"]:::cloud
+    LLM["LLM<br/>(ENC tokens only)"]:::cloud
+  end
+
+  Source -->|"PII JSON (только on-prem)"| Svc
+  Svc -->|"Cloud request: masked JSON only"| DBX
+  DBX -->|"Score + reasons + masked_customer_id"| Svc
+
+  Svc -->|"Decision payload: original + _fraud_scoring"| DE
+
+  Svc -->|"LLM prompt: [[ENC|...]] tokens only"| LLM
+  LLM -->|"LLM response: tokens preserved"| Svc
+  Svc -->|"unmask_text() (только on-prem)"| RM
 ```
-[[ENC|v1|<field_name>|<base64url_ciphertext>]]
-```
 
-- Токены формируются on-prem из реальных значений (строки/числа)
-- LLM должен копировать токены как есть
-- После ответа выполняется `unmask_text()` и восстанавливается человекочитаемый текст
+## Куда Что Уходит (Не-Технический Взгляд)
 
-### Числовые поля
-- Диагональная матрица: `x_masked = x × scale_factor`
-- Scale factors хранятся как секрет сервиса
-- Обратимость: `x = x_masked / scale_factor`
+| Куда | Тип payload | Plaintext PII/PCI | Зачем |
+|---|---|---|---|
+| Cloud scoring (Databricks) | `CloudPredictionRequest` | Нет | Fraud scoring на masked-признаках |
+| LLM (cloud) | `LLMRequestMasked` | Нет | Текст для RM, но только с ENC токенами |
+| Decision Engine (on-prem) | Original + `_fraud_scoring` | Да (только on-prem) | Финальное решение on-prem |
 
-Пример (умножение на диагональную матрицу):
+## Трансформации Данных (Детерминированно и Обратимо)
 
+### 1) PII/PCI: Детерминированное шифрование (AES-256-SIV)
+
+Назначение: защита прямых идентификаторов (имя, телефон, email, PAN и т.д.) при сохранении детерминированности для join.
+
+Формулы:
 $$
-\mathbf{x} =
-\begin{bmatrix}
-275.50 \\
-18350.75 \\
-50000.00
-\end{bmatrix},
-\quad
+C = \\mathrm{Enc}_K(P; AD), \\quad P = \\mathrm{Dec}_K(C; AD)
+$$
+Детерминированность:
+$$
+(P_1 = P_2 \\wedge AD_1 = AD_2) \\Rightarrow (C_1 = C_2)
+$$
+Domain separation (разные поля, разный ciphertext):
+$$
+AD = \\texttt{"scb-demo|v1|"} \\Vert \\texttt{field\\_name}
+$$
+
+```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial","primaryTextColor":"#0f172a","lineColor":"#64748b","primaryColor":"#ffffff","secondaryColor":"#f1f5f9"}}}%%
+flowchart TB
+  subgraph DS["Детерминизм + domain separation (AD = field name)"]
+    direction LR
+    A["P = \"Ahmed\"<br/>AD = full_name"] --> B["C1 = Enc_K(P; AD)"]
+    C["P = \"Ahmed\"<br/>AD = email"] --> D["C2 = Enc_K(P; AD)"]
+  end
+```
+
+### 2) Числа: Диагональная матрица (обратимая трансформация)
+
+Назначение: демонстрация обратимого преобразования числовых полей, консистентного по каждому полю.
+
+Формулы:
+$$
+\\mathbf{x}' = D\\mathbf{x}, \\quad
 D =
-\begin{bmatrix}
-1.37 & 0 & 0 \\
-0 & 0.83 & 0 \\
+\\begin{bmatrix}
+s_1 & 0 & 0 \\\\
+0 & s_2 & 0 \\\\
+0 & 0 & s_3
+\\end{bmatrix}
+$$
+
+Пример:
+$$
+\\mathbf{x} =
+\\begin{bmatrix}
+275.50 \\\\
+18350.75 \\\\
+50000.00
+\\end{bmatrix},
+\\quad
+D =
+\\begin{bmatrix}
+1.37 & 0 & 0 \\\\
+0 & 0.83 & 0 \\\\
 0 & 0 & 1.11
-\end{bmatrix}
-$$
-
-$$
-\mathbf{x}' = D\mathbf{x} =
-\begin{bmatrix}
-377.435 \\
-15231.1225 \\
+\\end{bmatrix},
+\\quad
+\\mathbf{x}' = D\\mathbf{x} =
+\\begin{bmatrix}
+377.435 \\\\
+15231.1225 \\\\
 55500.00
-\end{bmatrix}
+\\end{bmatrix}
 $$
 
-### Категориальные поля
-- **MCC**: биективная перестановка 0-9999 по seed
+![Диагональное масштабирование (пример)](docs/assets/diagonal_scaling.png)
 
-Визуализация (seeded bijection для MCC):
+### 3) Категории: перестановка MCC + маппинг Channel
+
+MCC (биективная перестановка по seed):
+$$
+m' = \\pi_s(m), \\quad m = \\pi_s^{-1}(m')
+$$
 
 ```mermaid
 flowchart LR
-    A["Original MCC (m)"] --> B["Permutation pi (seeded by CAT_SEED)"]
-    B --> C["Masked MCC (m')"]
+  A["MCC m (0..9999)"] --> B["Permutation pi_s<br/>(seeded by CAT_SEED)"]
+  B --> C["Masked MCC m' (0..9999)"]
 ```
-
-Пример (иллюстративно; реальные значения зависят от CAT_SEED):
-- `m = 5411` → `m' = 7823`
 
 ![MCC permutation (sample)](docs/assets/mcc_permutation_scatter.png)
 
-Как читать scatterplot: каждая точка — это взаимно-однозначное отображение
-исходного MCC (ось X) в замаскированный MCC (ось Y). Идеальная диагональ означала бы
-отсутствие маскирования; «разброс» показывает перестановку при сохранении биекции.
+Как читать этот график:
+- Если `m' = m` (без маскирования), точки лежали бы на диагонали `y = x`.
+- При seeded **перестановке** точки выглядят “перемешанными”, потому что числовая связь не сохраняется.
+- Маппинг остаётся обратимым (при том же seed), но **частоты категорий** по-прежнему могут быть оценены на masked данных.
 
-- **Channel**: фиксированный маппинг (POS→CH_ALPHA, etc.)
-
-Визуализация (фиксированный маппинг channel):
+Channel (фиксированный обратимый маппинг):
+$$
+c' = f(c), \\quad c = f^{-1}(c')
+$$
 
 ```mermaid
 flowchart LR
-    POS[POS] --> CHA[CH_ALPHA]
-    ECOM[ECOM] --> CHB[CH_BETA]
-    ATM[ATM] --> CHG[CH_GAMMA]
-    MOB[MOB] --> CHD[CH_DELTA]
+  POS["POS"] --> CHA["CH_ALPHA"]
+  ECOM["ECOM"] --> CHB["CH_BETA"]
+  ATM["ATM"] --> CHG["CH_GAMMA"]
+  MOB["MOB"] --> CHD["CH_DELTA"]
 ```
 
 Таблица маппинга:
 
 | Original | Masked |
-|----------|--------|
+|---|---|
 | POS | CH_ALPHA |
 | ECOM | CH_BETA |
 | ATM | CH_GAMMA |
 | MOB | CH_DELTA |
 
+## LLM Masked Exchange (plaintext не уходит в LLM)
 
-## 🔁 Sequence Diagram (End-to-End)
+Формат токена (LLM должен копировать токены без изменений):
+`[[ENC|v1|<field_name>|<base64url_ciphertext>]]`
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant UI as Demo UI
-    participant Svc as On-Prem Masking Service
-    participant Cloud as Databricks Scoring (Cloud)
-    participant DE as Decision Engine (On-Prem)
-    participant LLM as LLM (Cloud)
-    participant RM as RM Workbench (On-Prem)
-
-    User->>UI: Run demo / manual step
-    UI->>Svc: POST /v1/demo/run (transaction + optional customer)
-
-    Svc->>Svc: Step 0: Receive TransactionIn (PII plaintext)
-    Svc->>Svc: Step 1: mask_transaction()
-    Note right of Svc: PII -> AES-256-SIV<br/>Numeric -> scaling<br/>Categorical -> mapping
-    Svc->>Svc: validate_egress(payload, destination="cloud")
-    Svc->>Cloud: Step 2: send masked payload
-    Cloud->>Svc: Step 3: fraud_probability + reason_codes + masked_customer_id
-
-    Svc->>Svc: Step 3: build Decision Engine payload (original + _fraud_scoring)
-    Svc->>DE: Send Decision Engine payload (on-prem)
-    DE-->>Svc: Step 4: Decision response (approve/step-up/review) [demo stub]
-
-    Svc->>Svc: Step 5: tokenization for LLM (ENC tokens)
-    Note right of Svc: [[ENC|v1|field|base64url]]
-    Svc->>Svc: validate_egress(payload, destination="llm")
-    Svc->>LLM: Step 6: LLM request (masked only)
-    LLM-->>Svc: Step 7: LLM response (masked tokens preserved)
-
-    alt ENABLE_UNMASK = true
-        Svc->>Svc: Step 8: unmask_text() on-prem
-        Svc->>RM: RM explanation (plaintext on-prem)
-    else ENABLE_UNMASK = false
-        Svc->>RM: masked-only explanation
-    end
-
-    Svc-->>UI: Aggregated artifacts for UI playback
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial","primaryTextColor":"#0f172a","lineColor":"#64748b","primaryColor":"#ffffff","secondaryColor":"#f1f5f9"}}}%%
+flowchart LR
+  A["On-Prem<br/>make_enc_token() / mask_text()"] -->|"Только ENC токены"| B["LLM (Cloud)<br/>masked only"]
+  B -->|"Токены сохранены"| C["On-Prem<br/>unmask_text()"]
+  C --> D["RM Workbench<br/>(финальный plaintext view)"]
 ```
 
-Кратко по шагам:
-- Step 0: сервис принимает исходный JSON транзакции с PII.
-- Step 1: маскирование (PII → AES-256-SIV, числа → scaling, категории → mapping).
-- Step 2–3: отправка masked в облако и получение скоринга.
-- Step 3–4: сборка payload для Decision Engine и решение (stub).
-- Step 5–7: токенизация PII для LLM, запрос/ответ только в masked виде.
-- Step 8: de-mask on-prem и выдача текста в RM Workbench.
+## Сквозной сценарий (Executive View)
 
-## 🚀 Быстрый старт
+```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial","primaryTextColor":"#0f172a","lineColor":"#64748b","noteBkgColor":"#f8fafc","noteTextColor":"#0f172a"}}}%%
+sequenceDiagram
+    autonumber
+    actor Client as "Source System"
+    participant Svc as "PII Masking Service (On-Prem)"
+    participant DBX as "Databricks Scoring (Cloud)"
+    participant DE as "Decision Engine (On-Prem)"
+    participant LLM as "LLM (Cloud)"
+    participant RM as "RM Workbench (On-Prem)"
+
+    Client->>Svc: Raw transaction JSON (PII/PCI)
+    Svc->>Svc: Mask transaction (PII/cat/numeric)
+    Svc->>Svc: validate_egress(destination="cloud")
+    Svc->>DBX: CloudPredictionRequest (masked only)
+    DBX-->>Svc: Score + reasons + masked_customer_id
+
+    par On-Prem decisioning
+        Svc->>DE: Original + _fraud_scoring (on-prem only)
+    and RM explainability (LLM-safe)
+        Svc->>Svc: Build prompt (ENC tokens) + safety checks
+        Svc->>LLM: LLMRequestMasked (ENC tokens only)
+        LLM-->>Svc: Explanation with tokens preserved
+        Svc->>RM: unmask_text() on-prem only
+    end
+```
+
+Полная step-by-step версия (как в Demo UI): `sequence.md`
+
+## Демо UI (Interactive Playback)
+
+1. Запусти сервис: `uvicorn app.main:app --reload`
+2. Открой демо UI: `http://localhost:8000/`
+3. Или Swagger: `http://localhost:8000/docs`
+
+<details>
+<summary><strong>Инженерная справка (установка, API, конфигурация)</strong></summary>
+
+## Быстрый старт
 
 ### Локально
 
 ```bash
 # 1. Клонировать/создать директорию
-cd pii-masking-service
+cd PII-Masking-Service
 
 # 2. Создать виртуальное окружение
 python3.11 -m venv venv
@@ -212,7 +272,7 @@ docker run -d \
 curl http://localhost:8000/health
 ```
 
-## 📖 API
+## API
 
 ### `GET /health`
 Проверка состояния сервиса.
@@ -354,7 +414,7 @@ curl -X POST http://localhost:8000/v1/fraud/explain \
   }'
 ```
 
-## 🎮 Демо-клиент
+## Демо-клиент
 
 ```bash
 # Запустить демонстрацию
@@ -379,7 +439,7 @@ python demo_end_to_end.py
 5. 🔓 Восстановление исходных данных (unmask)
 6. ✔️ Верификацию совпадения
 
-## ⚙️ Конфигурация
+## Конфигурация
 
 Переменные окружения (см. `.env.example`):
 
@@ -401,10 +461,10 @@ python demo_end_to_end.py
 python -c "import secrets, base64; print(base64.b64encode(secrets.token_bytes(64)).decode())"
 ```
 
-## 📁 Структура проекта
+## Структура проекта
 
 ```
-pii-masking-service/
+PII-Masking-Service/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py          # FastAPI приложение
@@ -423,7 +483,7 @@ pii-masking-service/
 └── demo_end_to_end.py
 ```
 
-## 🧪 Тестирование
+## Тестирование
 
 ```bash
 # Запустить сервис
@@ -439,7 +499,7 @@ curl http://localhost:8000/health
 open http://localhost:8000/docs
 ```
 
-## 📋 Чеклист для демонстрации
+## Чеклист для демонстрации
 
 - [ ] Запустить сервис: `uvicorn app.main:app --reload`
 - [ ] Открыть Swagger UI: http://localhost:8000/docs
@@ -455,8 +515,9 @@ open http://localhost:8000/docs
 - [ ] Показать `/v1/unmask/transaction` — восстановление
 - [ ] Запустить `demo_client.py` для автоматической демонстрации
 
+</details>
 
-## 📚 Documentation
+## Документация
 
 - RU: `docs/PII_Masking_Service_Design_ru.md`
 - EN: `docs/PII_Masking_Service_Design_en.md`
@@ -468,7 +529,7 @@ python docs/generate_assets.py
 ```
 
 
-## 📜 Лицензия
+## Лицензия
 
 Internal use only. Not for distribution.
 
