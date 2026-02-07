@@ -73,16 +73,21 @@ flowchart LR
 Назначение: защита прямых идентификаторов (имя, телефон, email, PAN и т.д.) при сохранении детерминированности для join.
 
 Формулы:
+
 $$
 C = \mathrm{Enc}_K(P; AD), \quad P = \mathrm{Dec}_K(C; AD)
 $$
+
 Детерминированность:
+
 $$
 (P_1 = P_2 \wedge AD_1 = AD_2) \Rightarrow (C_1 = C_2)
 $$
+
 Domain separation (разные поля, разный ciphertext):
+
 $$
-AD = \texttt{"scb-demo|v1|"} \Vert \texttt{field\_name}
+AD = \texttt{scb-demo|v1|} \Vert \texttt{field\_name}
 $$
 
 ```mermaid
@@ -102,6 +107,7 @@ flowchart TB
 Назначение: демонстрация обратимого преобразования числовых полей, консистентного по каждому полю.
 
 Формулы:
+
 $$
 \mathbf{x}' = D\mathbf{x}, \quad
 D =
@@ -113,6 +119,7 @@ s_1 & 0 & 0 \\
 $$
 
 Пример:
+
 $$
 \mathbf{x} =
 \begin{bmatrix}
@@ -137,12 +144,13 @@ D =
 $$
 
 <p align="center">
-  <img src="docs/assets/diagonal_scaling.png" width="520" alt="Диагональное масштабирование (пример)">
+  <img src="docs/assets/diagonal_scaling.png" width="460" alt="Диагональное масштабирование (пример)">
 </p>
 
 ### 3) Категории: перестановка MCC + маппинг Channel
 
 MCC (биективная перестановка по seed):
+
 $$
 m' = \pi_s(m), \quad m = \pi_s^{-1}(m')
 $$
@@ -157,7 +165,7 @@ flowchart LR
 ```
 
 <p align="center">
-  <img src="docs/assets/mcc_permutation_scatter.png" width="520" alt="MCC permutation (sample)">
+  <img src="docs/assets/mcc_permutation_scatter.png" width="460" alt="MCC permutation (sample)">
 </p>
 
 Как читать этот график:
@@ -166,29 +174,37 @@ flowchart LR
 - Маппинг остаётся обратимым (при том же seed), но **частоты категорий** по-прежнему могут быть оценены на masked данных.
 
 Channel (фиксированный обратимый маппинг):
+
 $$
 c' = f(c), \quad c = f^{-1}(c')
 $$
 
-```mermaid
-flowchart LR
-  classDef src fill:#f1f5f9,stroke:#64748b,stroke-width:1px,color:#0f172a;
-  classDef dst fill:#e8f3ff,stroke:#2563eb,stroke-width:1px,color:#0f172a;
-
-  POS("POS"):::src --> CHA("CH_ALPHA"):::dst
-  ECOM("ECOM"):::src --> CHB("CH_BETA"):::dst
-  ATM("ATM"):::src --> CHG("CH_GAMMA"):::dst
-  MOB("MOB"):::src --> CHD("CH_DELTA"):::dst
-```
-
-Таблица маппинга:
-
-| Original | Masked |
-|---|---|
-| <kbd>POS</kbd> | <kbd>CH_ALPHA</kbd> |
-| <kbd>ECOM</kbd> | <kbd>CH_BETA</kbd> |
-| <kbd>ATM</kbd> | <kbd>CH_GAMMA</kbd> |
-| <kbd>MOB</kbd> | <kbd>CH_DELTA</kbd> |
+<table>
+  <tr>
+    <td valign="top">
+      <p>
+        <img src="docs/assets/channel_mapping.svg" width="460" alt="Channel fixed mapping (reversible)">
+      </p>
+    </td>
+    <td valign="top">
+      <p><strong>Таблица маппинга</strong></p>
+      <table>
+        <thead>
+          <tr>
+            <th>Original</th>
+            <th>Masked</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><kbd>POS</kbd></td><td><kbd>CH_ALPHA</kbd></td></tr>
+          <tr><td><kbd>ECOM</kbd></td><td><kbd>CH_BETA</kbd></td></tr>
+          <tr><td><kbd>ATM</kbd></td><td><kbd>CH_GAMMA</kbd></td></tr>
+          <tr><td><kbd>MOB</kbd></td><td><kbd>CH_DELTA</kbd></td></tr>
+        </tbody>
+      </table>
+    </td>
+  </tr>
+</table>
 
 ## LLM Masked Exchange (plaintext не уходит в LLM)
 

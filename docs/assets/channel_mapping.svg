@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="340" viewBox="0 0 920 340" role="img" aria-label="Channel fixed mapping (reversible)">
+  <defs>
+    <style>
+      .title { font: 600 20px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; fill: #0f172a; }
+      .sub { font: 500 13px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; fill: #475569; }
+      .lblA { font: 800 18px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; fill: #0f172a; letter-spacing: 0.4px; }
+      .lblB { font: 800 16px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; fill: #0f172a; letter-spacing: 0.2px; }
+      .boxA { fill: #f1f5f9; stroke: #64748b; stroke-width: 2; }
+      .boxB { fill: #e8f3ff; stroke: #2563eb; stroke-width: 2; }
+      .arrow { stroke: #0f172a; stroke-width: 2.2; fill: none; }
+      .tag { font: 600 12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; fill: #0f172a; }
+      .tagBox { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; }
+    </style>
+    <marker id="arrowHead" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#0f172a"/>
+    </marker>
+  </defs>
+
+  <rect x="14" y="14" width="892" height="312" rx="18" ry="18" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+
+  <text x="40" y="50" class="title">Channel: fixed reversible mapping</text>
+  <text x="40" y="74" class="sub">Small explicit mapping, reversible under the same configuration.</text>
+
+  <rect x="40" y="92" width="160" height="28" rx="10" ry="10" class="tagBox"/>
+  <circle cx="56" cy="106" r="6" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+  <text x="70" y="111" class="tag">Original</text>
+
+  <rect x="210" y="92" width="160" height="28" rx="10" ry="10" class="tagBox"/>
+  <circle cx="226" cy="106" r="6" fill="#e8f3ff" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="240" y="111" class="tag">Masked</text>
+
+  <!-- Row 1 -->
+  <rect x="60" y="140" width="130" height="56" rx="14" ry="14" class="boxA"/>
+  <text x="125" y="175" text-anchor="middle" class="lblA">POS</text>
+  <path d="M205 168 L235 168" class="arrow" marker-end="url(#arrowHead)"/>
+  <rect x="250" y="140" width="170" height="56" rx="14" ry="14" class="boxB"/>
+  <text x="335" y="175" text-anchor="middle" class="lblB">CH_ALPHA</text>
+
+  <rect x="480" y="140" width="130" height="56" rx="14" ry="14" class="boxA"/>
+  <text x="545" y="175" text-anchor="middle" class="lblA">ECOM</text>
+  <path d="M625 168 L655 168" class="arrow" marker-end="url(#arrowHead)"/>
+  <rect x="670" y="140" width="170" height="56" rx="14" ry="14" class="boxB"/>
+  <text x="755" y="175" text-anchor="middle" class="lblB">CH_BETA</text>
+
+  <!-- Row 2 -->
+  <rect x="60" y="226" width="130" height="56" rx="14" ry="14" class="boxA"/>
+  <text x="125" y="261" text-anchor="middle" class="lblA">ATM</text>
+  <path d="M205 254 L235 254" class="arrow" marker-end="url(#arrowHead)"/>
+  <rect x="250" y="226" width="170" height="56" rx="14" ry="14" class="boxB"/>
+  <text x="335" y="261" text-anchor="middle" class="lblB">CH_GAMMA</text>
+
+  <rect x="480" y="226" width="130" height="56" rx="14" ry="14" class="boxA"/>
+  <text x="545" y="261" text-anchor="middle" class="lblA">MOB</text>
+  <path d="M625 254 L655 254" class="arrow" marker-end="url(#arrowHead)"/>
+  <rect x="670" y="226" width="170" height="56" rx="14" ry="14" class="boxB"/>
+  <text x="755" y="261" text-anchor="middle" class="lblB">CH_DELTA</text>
+</svg>
