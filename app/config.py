@@ -40,7 +40,7 @@ def _get_or_generate_key() -> bytes:
 
 def _derive_cat_seed(key: bytes) -> int:
     """
-    Derive categorical seed from the PII key using HMAC-SHA256.
+    Derive categorical seed from the PII key using SHA256.
     Takes first 8 bytes as unsigned int.
     """
     seed_env = os.getenv("CAT_SEED")

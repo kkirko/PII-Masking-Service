@@ -149,6 +149,69 @@ def _build_llm_request_masked(prompt: LLMExplainPrompt) -> LLMRequestMasked:
     )
 
 
+def _ensure_no_plaintext_in_llm_prompt(
+    prompt_text: str,
+    transaction: TransactionIn,
+    customer: Optional[CustomerIn],
+) -> None:
+    """
+    Best-effort safety check: block accidental plaintext leakage into LLM prompt text.
+
+    This is intentionally simple for the demo: we ensure the prompt contains ENC tokens
+    and does not contain raw values from the incoming transaction/customer objects.
+    """
+    if "[[ENC|" not in prompt_text:
+        raise EgressViolation("LLM egress blocked: prompt must contain ENC tokens")
+
+    haystack = prompt_text.lower()
+
+    candidates: list[tuple[str, str]] = []
+    txn_dump = transaction.model_dump()
+    for field in (
+        "customer_id",
+        "full_name",
+        "phone",
+        "email",
+        "billing_address",
+        "card_pan",
+        "card_expiry",
+        "ip_address",
+        "device_id",
+        "merchant_name",
+        "transaction_ts",
+    ):
+        value = txn_dump.get(field)
+        if value:
+            candidates.append((field, str(value)))
+
+    for field in ("amount", "available_balance", "credit_limit"):
+        value = txn_dump.get(field)
+        if value is None:
+            continue
+        # Catch common float renderings if someone formats the prompt incorrectly.
+        candidates.append((field, str(value)))
+        try:
+            candidates.append((field, _format_amount(float(value))))
+        except Exception:
+            pass
+
+    if customer:
+        cust_dump = customer.model_dump()
+        for field in ("customer_id", "full_name", "phone", "email", "address"):
+            value = cust_dump.get(field)
+            if value:
+                candidates.append((f"customer.{field}", str(value)))
+
+    for field, value in candidates:
+        # Avoid noisy false positives on very short strings.
+        if len(value) < 5:
+            continue
+        if value.lower() in haystack:
+            raise EgressViolation(
+                f"LLM egress blocked: prompt contains plaintext for field '{field}'"
+            )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler."""
@@ -620,14 +683,15 @@ async def demo_run(request: FraudExplainRequest):
     """Return all artifacts needed for UI playback in a single call."""
     original_txn = request.transaction
 
-    masked_txn = mask_transaction(original_txn)
+    masked_with_id = mask_and_track(original_txn)
+    masked_txn = masked_with_id.masked_transaction
     try:
         validate_egress(masked_txn, "cloud", TransactionOut)
     except EgressViolation as e:
         logger.error(f"Cloud egress blocked: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-    cloud_payload = prepare_for_cloud(masked_txn.customer_id, masked_txn)
+    cloud_payload = prepare_for_cloud(masked_with_id.masked_id, masked_txn)
     try:
         validate_egress(cloud_payload, "cloud", CloudPredictionRequest)
     except EgressViolation as e:
@@ -644,6 +708,11 @@ async def demo_run(request: FraudExplainRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
     llm_request_masked = _build_llm_request_masked(llm_prompt)
+    try:
+        _ensure_no_plaintext_in_llm_prompt(llm_request_masked.prompt, original_txn, request.customer)
+    except EgressViolation as e:
+        logger.error(f"LLM egress blocked: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
     try:
         validate_egress(llm_request_masked, "llm", LLMRequestMasked)
     except EgressViolation as e:
