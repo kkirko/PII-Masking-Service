@@ -94,7 +94,7 @@ $$
 
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"fontFamily":"ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial","primaryTextColor":"#0f172a","lineColor":"#64748b","primaryColor":"#ffffff","secondaryColor":"#f1f5f9"}}}%%
-flowchart TB
+flowchart LR
   classDef src fill:#f1f5f9,stroke:#64748b,stroke-width:1px,color:#0f172a;
   classDef tok fill:#e8f3ff,stroke:#2563eb,stroke-width:1px,color:#0f172a;
   A("Value: Ahmed<br/>AD: full_name"):::src --> B("Token C1<br/>(deterministic)"):::tok
