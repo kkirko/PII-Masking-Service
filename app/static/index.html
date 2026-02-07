@@ -273,12 +273,18 @@
             font-size: 0.72rem;
         }
 
-        .main-grid {
-            margin-top: 14px;
-            display: grid;
-            grid-template-columns: 0.9fr 1.5fr;
-            gap: 14px;
-        }
+	        .main-grid {
+	            margin-top: 14px;
+	            display: grid;
+	            /* RM Workbench should be the primary readable area. */
+	            grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.65fr);
+	            gap: 14px;
+	        }
+
+	        /* Prevent long unbroken strings (tokens) from forcing the grid column wider. */
+	        .main-grid > .card {
+	            min-width: 0;
+	        }
 
         .card-header {
             display: flex;
@@ -297,12 +303,18 @@
             font-weight: 700;
         }
 
-        .decision-metrics {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-top: 10px;
-        }
+	        .decision-metrics {
+	            display: flex;
+	            align-items: center;
+	            gap: 16px;
+	            margin-top: 10px;
+	        }
+
+	        #decision-preview {
+	            overflow-wrap: anywhere;
+	            word-break: break-word;
+	            white-space: pre-wrap;
+	        }
 
         .reason-chips {
             display: flex;
