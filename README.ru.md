@@ -87,19 +87,21 @@ $$
 Domain separation (разные поля, разный ciphertext):
 
 $$
-AD = \texttt{scb-demo|v1|} \Vert \texttt{field\_name}
+AD = \texttt{scb-demo|v1|} \Vert \texttt{field\\_name}
 $$
+
+Диаграмма (детерминизм + domain separation, AD включает имя поля):
 
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"fontFamily":"ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial","primaryTextColor":"#0f172a","lineColor":"#64748b","primaryColor":"#ffffff","secondaryColor":"#f1f5f9"}}}%%
 flowchart TB
   classDef src fill:#f1f5f9,stroke:#64748b,stroke-width:1px,color:#0f172a;
   classDef tok fill:#e8f3ff,stroke:#2563eb,stroke-width:1px,color:#0f172a;
-  subgraph DS["Детерминизм + domain separation (AD = field name)"]
-    direction LR
-    A("Value: Ahmed<br/>AD: full_name"):::src --> B("Token C1<br/>(deterministic)"):::tok
-    C("Value: Ahmed<br/>AD: email"):::src --> D("Token C2<br/>(different AD)"):::tok
-  end
+  A("Value: Ahmed<br/>AD: full_name"):::src --> B("Token C1<br/>(deterministic)"):::tok
+  C("Value: Ahmed<br/>AD: email"):::src --> D("Token C2<br/>(different AD)"):::tok
+  B --> C
+
+  linkStyle 2 stroke:transparent,fill:transparent,opacity:0;
 ```
 
 ### 2) Числа: Диагональная матрица (обратимая трансформация)
