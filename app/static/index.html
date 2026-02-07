@@ -1172,7 +1172,20 @@
 
         function highlightTokens(text) {
             if (!text) return '--';
-            return text.replace(ENC_TOKEN_REGEX, token => `<span class="token-pill">${truncate(token, 10)}</span>`);
+            const value = String(text);
+            const regex = new RegExp(ENC_TOKEN_REGEX.source, 'g');
+            const parts = [];
+            let lastIndex = 0;
+            let match;
+            while ((match = regex.exec(value)) !== null) {
+                const before = value.slice(lastIndex, match.index);
+                parts.push(escapeHtml(before));
+                const token = match[0];
+                parts.push(`<span class="token-pill">${escapeHtml(truncate(token, 10))}</span>`);
+                lastIndex = match.index + token.length;
+            }
+            parts.push(escapeHtml(value.slice(lastIndex)));
+            return parts.join('');
         }
 
         function detectPlaintextLeak(original, maskedText) {
@@ -1307,30 +1320,41 @@
 
             rows.forEach(item => {
                 const meta = getClassificationMeta(item.field);
+                const fieldSafe = escapeHtml(item.field);
+                const originalSafe = escapeHtml(item.originalValue);
+                const maskedDisplay = PII_FIELDS.includes(item.field)
+                    ? truncate(item.maskedValue, 8)
+                    : String(item.maskedValue);
+                const maskedSafe = escapeHtml(maskedDisplay);
+                const metaClassSafe = escapeHtml(meta.classification);
+                const metaSensitivitySafe = escapeHtml(meta.sensitivity);
+                const metaControlSafe = escapeHtml(meta.control);
+                const metaStateSafe = escapeHtml(meta.state);
+                const metaHandlingSafe = escapeHtml(meta.handling);
                 const row = document.createElement('div');
                 row.className = 'diff-row';
                 row.innerHTML = `
                     <div class="diff-left">
-                        <div class="diff-label">${item.field}</div>
+                        <div class="diff-label">${fieldSafe}</div>
                         <div class="diff-values">
-                            <span>${item.originalValue}</span>
+                            <span>${originalSafe}</span>
                             <span class="diff-arrow">→</span>
-                            <span>${PII_FIELDS.includes(item.field) ? truncate(item.maskedValue, 8) : item.maskedValue}</span>
+                            <span>${maskedSafe}</span>
                         </div>
                     </div>
                     <div class="diff-right">
                         <div class="meta-badges">
-                            <span class="meta-chip meta-class">Classification: ${meta.classification}</span>
-                            <span class="meta-chip meta-sensitivity">Sensitivity: ${meta.sensitivity}</span>
-                            <span class="meta-chip meta-control">Control: ${meta.control}</span>
+                            <span class="meta-chip meta-class">Classification: ${metaClassSafe}</span>
+                            <span class="meta-chip meta-sensitivity">Sensitivity: ${metaSensitivitySafe}</span>
+                            <span class="meta-chip meta-control">Control: ${metaControlSafe}</span>
                         </div>
                         <div class="meta-row">
                             <div class="meta-label">State</div>
-                            <div class="meta-value">${meta.state}</div>
+                            <div class="meta-value">${metaStateSafe}</div>
                         </div>
                         <div class="meta-row">
                             <div class="meta-label">Handling</div>
-                            <div class="meta-value">${meta.handling}</div>
+                            <div class="meta-value">${metaHandlingSafe}</div>
                         </div>
                     </div>
                 `;
@@ -1491,16 +1515,20 @@
 
                 const row = document.createElement('div');
                 row.className = 'diff-row';
+                const fieldSafe = escapeHtml(item.field);
+                const originalSafe = escapeHtml(item.originalValue);
+                const tokenSafe = escapeHtml(truncate(item.tokenValue, 10));
+                const methodSafe = escapeHtml(method);
                 row.innerHTML = `
                     <div class="diff-left">
-                        <div class="diff-label">${item.field}</div>
+                        <div class="diff-label">${fieldSafe}</div>
                         <div class="diff-values">
-                            <span>${item.originalValue}</span>
+                            <span>${originalSafe}</span>
                             <span class="diff-arrow">→</span>
-                            <span>${truncate(item.tokenValue, 10)}</span>
+                            <span>${tokenSafe}</span>
                         </div>
                     </div>
-                    <div class="diff-right">${method}</div>
+                    <div class="diff-right">${methodSafe}</div>
                 `;
                 elements.traceTokenizationDiff.appendChild(row);
             });
