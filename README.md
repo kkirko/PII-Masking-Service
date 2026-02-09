@@ -548,7 +548,6 @@ open http://localhost:8000/docs
 
 ## Documentation
 
-- RU: `docs/PII_Masking_Service_Design_ru.md`
 - EN: `docs/PII_Masking_Service_Design_en.md`
 
 Generate documentation assets:
