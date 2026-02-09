@@ -3,3 +3,4 @@ __pycache__/
 .DS_Store
 .env
 watsonx-offline-demo.zip
+.demo_pii_key.b64

@@ -8,8 +8,19 @@ import base64
 import hashlib
 import logging
 import secrets
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# Demo-only persisted key file. This makes local restarts deterministic even if PII_KEY_B64 is not set.
+_DEMO_KEY_FILE = Path(__file__).resolve().parent.parent / ".demo_pii_key.b64"
+
+
+def _decode_pii_key_b64(key_b64: str) -> bytes:
+    key = base64.b64decode(key_b64)
+    if len(key) != 64:
+        raise ValueError(f"PII_KEY_B64 must decode to 64 bytes, got {len(key)}")
+    return key
 
 
 def _get_or_generate_key() -> bytes:
@@ -20,27 +31,40 @@ def _get_or_generate_key() -> bytes:
     key_b64 = os.getenv("PII_KEY_B64")
     if key_b64:
         try:
-            key = base64.b64decode(key_b64)
-            if len(key) != 64:
-                raise ValueError(f"PII_KEY_B64 must decode to 64 bytes, got {len(key)}")
-            return key
+            return _decode_pii_key_b64(key_b64)
         except Exception as e:
             logger.error(f"Failed to decode PII_KEY_B64: {e}")
             raise
-    else:
-        # Generate random key for demo purposes
-        key = secrets.token_bytes(64)
-        logger.warning(
-            "⚠️  PII_KEY_B64 not set! Generated random key for demo. "
-            "Data will NOT be recoverable after restart. "
-            "To persist, set PII_KEY_B64 in the environment."
+
+    # Demo fallback: reuse a persisted key so unmasking works after restart.
+    try:
+        if _DEMO_KEY_FILE.exists():
+            persisted_b64 = _DEMO_KEY_FILE.read_text(encoding="utf-8").strip()
+            if persisted_b64:
+                return _decode_pii_key_b64(persisted_b64)
+    except Exception as e:
+        # If the file is unreadable/invalid, we will regenerate and overwrite it below.
+        logger.info(f"Demo key file read failed ({_DEMO_KEY_FILE.name}): {e}. Regenerating.")
+
+    # Generate and persist a demo key (DEMO ONLY).
+    key = secrets.token_bytes(64)
+    try:
+        _DEMO_KEY_FILE.write_text(base64.b64encode(key).decode("ascii"), encoding="utf-8")
+        logger.info(
+            f"PII_KEY_B64 not set. Generated a demo key and persisted it to {_DEMO_KEY_FILE.name} "
+            f"(demo only). Set PII_KEY_B64 for real deployments."
         )
-        return key
+    except Exception as e:
+        logger.info(
+            f"PII_KEY_B64 not set. Using an in-memory demo key (could not persist {_DEMO_KEY_FILE.name}: {e}). "
+            f"Set PII_KEY_B64 for real deployments."
+        )
+    return key
 
 
 def _derive_cat_seed(key: bytes) -> int:
     """
-    Derive categorical seed from the PII key using SHA256.
+    Derive categorical seed from the PII key using SHA-256.
     Takes first 8 bytes as unsigned int.
     """
     seed_env = os.getenv("CAT_SEED")
