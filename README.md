@@ -313,11 +313,12 @@ flowchart LR
   classDef block fill:#fee2e2,stroke:#dc2626,stroke-width:1px,color:#7f1d1d;
   classDef rm fill:#f3f4f6,stroke:#64748b,stroke-width:1px,color:#0f172a;
 
-  A["On-Prem<br/>build LLM prompt"]:::onprem --> B["Presidio pre-flight scan<br/>detect plaintext PII"]:::detect
-  B -->|"No plaintext detected"| C["LLM request<br/>ENC tokens only"]:::onprem
-  B -->|"PII candidate found"| D["Block / re-mask<br/>no egress"]:::block
-  C --> E["LLM<br/>tokens preserved"]:::cloud
-  E --> F["On-Prem<br/>unmask_text() for RM"]:::rm
+  A["On-Prem<br/>build LLM prompt"]:::onprem --> B["Presidio pre-flight scan<br/>detection signal"]:::detect
+  B --> C["Hard checks<br/>substring safety + validate_egress"]:::onprem
+  C -->|"Pass"| D["LLM request<br/>ENC tokens only"]:::onprem
+  C -->|"Fail"| E["Block egress<br/>no plaintext leaves on-prem"]:::block
+  D --> F["LLM<br/>tokens preserved"]:::cloud
+  F --> G["On-Prem<br/>unmask_text() for RM"]:::rm
 ```
 
 ## End-to-End Sequence (Executive View)
@@ -616,13 +617,14 @@ python demo_client.py --base-url http://192.168.1.100:8000
 python demo_end_to_end.py
 ```
 
-Demo shows:
-1. ✅ Health check
-2. 📤 Sending transaction for masking
-3. 📊 Transformation details (PII → ciphertext, numbers × scale, categories)
-4. 🔄 Determinism check (repeat request)
-5. 🔓 Original data restoration (unmask)
-6. ✔️ Verification of equality
+The interactive UI demo is the primary executive demo and includes the integrated Presidio steps.
+
+The CLI clients are developer helpers:
+
+- `demo_client.py` shows the legacy/basic masking pipeline: health check, masking, cloud preparation, simulated scoring, identity restoration, and determinism checks.
+- `demo_end_to_end.py` shows `/v1/fraud/explain`: masked cloud payloads, masked LLM output, and optional on-prem RM de-masking.
+
+For the Presidio-integrated reviewer flow, use the browser UI or call `POST /v1/demo/run`.
 
 ## Configuration
 
@@ -641,7 +643,7 @@ Environment variables (see `.env.example`):
 | `LOG_HASH_SALT` | Salt for safe logging | empty |
 | `PRESIDIO_SCORE_THRESHOLD` | Presidio analyzer score threshold | `0.35` |
 | `PRESIDIO_SPACY_MODEL` | spaCy model used by Presidio | `en_core_web_lg` |
-| `PRESIDIO_DEMO_INCLUDE_ORIGINAL` | Include original text in demo responses | `true` |
+| `PRESIDIO_DEMO_INCLUDE_ORIGINAL` | Include raw source text previews in controlled demo responses/artifacts | `true` |
 
 ### Generate key
 

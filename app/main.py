@@ -1,15 +1,11 @@
 """
 PII Masking Service - FastAPI Application
 
-A microservice for masking/anonymizing card transaction data before
-sending to cloud analytics (e.g., Databricks) for fraud detection.
+On-prem privacy-by-design demo for card fraud analytics and RM explainability.
 
-Full Pipeline:
-1. Receive transaction with PII
-2. Mask data + generate unique tracking ID
-3. Send to cloud (simulated) for ML scoring
-4. Receive prediction by ID
-5. Restore identity to link prediction to real customer
+The service integrates Microsoft Presidio as a PII discovery/pre-flight signal,
+then applies deterministic masking, ENC tokenization, egress policy checks, and
+on-prem-only de-masking for the RM workbench demo.
 """
 
 import logging
@@ -309,26 +305,54 @@ app = FastAPI(
     description="""
 ## Card Transaction PII Masking Microservice
 
-This service masks personally identifiable information (PII) in card transactions
-before sending data to cloud analytics platforms for fraud detection.
+This service demonstrates an on-prem privacy-by-design flow for card fraud analytics
+and RM explainability. It detects candidate PII with Microsoft Presidio, applies
+deterministic masking/tokenization controls, validates cloud/LLM egress, and keeps
+de-masking on-prem only.
 
-### 🔄 Full Pipeline Flow
+### 🔄 Demo Playback Flow
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Transaction   │────▶│  Mask & Track    │────▶│  Cloud (ML)     │
-│   with PII      │     │  Generate ID     │     │  Prediction     │
-└─────────────────┘     └──────────────────┘     └────────┬────────┘
-                                                          │
-┌─────────────────┐     ┌──────────────────┐              │
-│   Decision      │◀────│ Restore Identity │◀─────────────┘
-│   (with PII)    │     │   by ID          │
-└─────────────────┘     └──────────────────┘
+Input transaction
+      │
+      ▼
+Microsoft Presidio
+PII discovery on actual demo text
+      │
+      ▼
+Mask & Track
+PII/PCI encryption + numeric scaling + categorical mapping
+      │
+      ▼
+Egress Guard ───▶ Cloud scoring
+      │              masked features only
+      ▼
+Decision Engine payload
+on-prem original + score
+      │
+      ▼
+Tokenization for LLM
+ENC tokens only
+      │
+      ▼
+Presidio pre-flight scan
+detection artifact before LLM egress
+      │
+      ▼
+LLM request / response
+tokens preserved
+      │
+      ▼
+RM Workbench
+optional on-prem de-masking
 ```
 
 ### Features:
-- **PII Encryption**: AES-256-SIV deterministic encryption
-- **Numeric Scaling**: Diagonal matrix transformation (reversible)
+- **Presidio PII Discovery**: on-prem detection signal for free text and prompt drafts
+- **PII/PCI Encryption**: AES-256-SIV deterministic encryption
+- **LLM Tokenization**: deterministic `[[ENC|...]]` tokens
+- **Egress Policy Checks**: block plaintext leakage before cloud/LLM egress
+- **Numeric Scaling**: diagonal matrix transformation (reversible demo transform)
 - **Category Mapping**: Deterministic permutation for MCC and channel
 - **Identity Tracking**: Link predictions back to real customers by masked ID
     """,

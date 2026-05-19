@@ -29,10 +29,7 @@ COPY --from=builder /root/.local /home/appuser/.local
 COPY app/ ./app/
 
 # Set ownership
-RUN chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
+RUN chown -R appuser:appuser /app /home/appuser/.local
 
 # Add local bin to PATH
 ENV PATH=/home/appuser/.local/bin:$PATH
@@ -43,6 +40,9 @@ ENV PYTHONUNBUFFERED=1 \
     MASK_VERSION=v1 \
     ENABLE_UNMASK=false \
     PRESIDIO_SPACY_MODEL=en_core_web_lg
+
+# Switch to non-root user
+USER appuser
 
 # Microsoft Presidio default English NLP model.
 # For Russian/local-language support, add custom recognizers and NLP configuration.

@@ -120,18 +120,13 @@ sequenceDiagram
     rect rgb(230, 247, 255)
       Svc->>Svc: Build LLMExplainPrompt (ENC tokens only)
       Svc->>Presidio: Pre-flight scan actual masked LLM prompt
-      alt Plaintext PII candidate found
-          Presidio-->>Svc: Candidate detected
-          Svc->>Svc: Block or re-mask before egress
-      else No plaintext PII candidate
-          Presidio-->>Svc: No plaintext PII candidate
-          Svc->>Guard: validate_egress(destination="llm")
-          Guard-->>Svc: Approved: ENC tokens only
-          Svc->>Svc: Build LLMRequestMasked (prompt string + tokens)
-          Svc->>Svc: Ensure no plaintext substrings in prompt
-          Svc->>LLM: LLM request (masked only)
-          LLM-->>Svc: LLM response (masked, tokens preserved)
-      end
+      Presidio-->>Svc: Detection artifact for reviewer / policy signal
+      Svc->>Guard: validate_egress(destination="llm")
+      Guard-->>Svc: Approved: ENC tokens only
+      Svc->>Svc: Build LLMRequestMasked (prompt string + tokens)
+      Svc->>Svc: Ensure no plaintext substrings in prompt
+      Svc->>LLM: LLM request (masked only)
+      LLM-->>Svc: LLM response (masked, tokens preserved)
     end
 
     alt ENABLE_UNMASK = true
@@ -143,5 +138,7 @@ sequenceDiagram
 
     Svc-->>UI: Aggregated artifacts for UI playback
 ```
+
+In this demo, Presidio pre-flight findings are surfaced as artifacts for reviewer visibility. The hard egress controls are `validate_egress(...)` and plaintext substring checks. Production policy can choose to block or re-mask based on Presidio findings.
 
 </details>

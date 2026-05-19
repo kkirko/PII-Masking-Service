@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
-Demo client for PII Masking Service - Full Pipeline Demonstration
+Developer CLI for the legacy/basic masking pipeline.
 
-This script demonstrates the complete anti-fraud pipeline:
-1. Receive transaction with PII
-2. Mask data and generate unique tracking ID
-3. Send to cloud (simulated) for ML scoring
-4. Receive prediction by masked ID
-5. Restore identity to link prediction to real customer
+For the Presidio-integrated executive playback, use the browser UI or POST /v1/demo/run.
+This script demonstrates:
+1. Health check
+2. Masking and tracking
+3. Cloud payload preparation
+4. Simulated cloud scoring
+5. Identity restoration
+6. Determinism/unmask checks
 
 Usage:
     python demo_client.py [--base-url http://localhost:8000]
@@ -76,7 +78,7 @@ def truncate(value, max_len: int = 40) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="PII Masking Service Demo Client")
+    parser = argparse.ArgumentParser(description="Developer CLI for the legacy/basic masking pipeline")
     parser.add_argument(
         "--base-url",
         default="http://localhost:8000",
@@ -87,9 +89,10 @@ def main():
     base_url = args.base_url.rstrip("/")
     client = httpx.Client(timeout=30.0)
     
-    print_header("🔐 PII MASKING SERVICE - FULL PIPELINE DEMO", "═")
+    print_header("🔐 PII MASKING SERVICE - LEGACY/BASIC PIPELINE CLI", "═")
     print(f"\nTarget: {base_url}")
-    print("Scenario: Card transaction fraud detection with PII protection")
+    print("Scenario: Developer helper for masking, cloud preparation, scoring, and restoration")
+    print("Executive Presidio playback: use the browser UI or POST /v1/demo/run")
     
     # ================================================================
     # Step 0: Health Check
