@@ -543,120 +543,6 @@
             font-size: 0.85rem;
         }
 
-        .presidio-card {
-            margin-top: 14px;
-            padding: 18px;
-            overflow: hidden;
-        }
-
-        .presidio-layout {
-            display: grid;
-            grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-            gap: 16px;
-            margin-top: 14px;
-            align-items: stretch;
-        }
-
-        .presidio-panel {
-            min-width: 0;
-            padding: 14px;
-            border-radius: 18px;
-            background:
-                linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.52));
-            border: 1px solid var(--line);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-        }
-
-        .presidio-panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .presidio-panel-title {
-            margin: 0;
-            font-size: 0.78rem;
-            font-weight: 800;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: #64748b;
-        }
-
-        .presidio-mini-metric {
-            flex: 0 0 auto;
-            padding: 4px 9px;
-            border-radius: 999px;
-            background: rgba(29, 78, 216, 0.09);
-            color: #1d4ed8;
-            border: 1px solid rgba(29, 78, 216, 0.16);
-            font-size: 0.68rem;
-            font-weight: 800;
-        }
-
-        .presidio-input {
-            width: 100%;
-            min-height: 148px;
-            resize: vertical;
-            border: 1px solid var(--line-strong);
-            border-radius: 16px;
-            padding: 12px 14px;
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.8rem;
-            line-height: 1.55;
-            color: var(--ink);
-            background: rgba(255, 255, 255, 0.82);
-            outline: none;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
-            overflow-wrap: anywhere;
-        }
-
-        .presidio-input:focus {
-            border-color: rgba(29, 78, 216, 0.42);
-            box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.12);
-        }
-
-        .presidio-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 10px;
-        }
-
-        .presidio-warning {
-            margin-top: 10px;
-            padding: 10px 12px;
-            border-radius: 14px;
-            background: rgba(245, 158, 11, 0.12);
-            border: 1px solid rgba(245, 158, 11, 0.22);
-            color: #92400e;
-            font-size: 0.78rem;
-            line-height: 1.45;
-        }
-
-        .presidio-result {
-            display: grid;
-            grid-template-rows: auto auto minmax(0, 1fr);
-            gap: 12px;
-            min-width: 0;
-        }
-
-        .presidio-output {
-            min-height: 88px;
-            max-height: 170px;
-            padding: 12px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.70);
-            border: 1px solid var(--line);
-            color: var(--ink);
-            font-size: 0.84rem;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-            overflow: auto;
-        }
-
         .entity-list {
             display: grid;
             gap: 8px;
@@ -702,52 +588,6 @@
             background: rgba(22, 163, 74, 0.10);
             border: 1px solid rgba(22, 163, 74, 0.18);
             white-space: nowrap;
-        }
-
-        .presidio-raw-details {
-            min-width: 0;
-            overflow: hidden;
-        }
-
-        .presidio-raw-summary {
-            cursor: pointer;
-            font-weight: 700;
-            color: #1d4ed8;
-            list-style: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.82rem;
-        }
-
-        .presidio-raw-summary::-webkit-details-marker {
-            display: none;
-        }
-
-        .presidio-raw-summary::before {
-            content: '›';
-            display: inline-flex;
-            width: 20px;
-            height: 20px;
-            align-items: center;
-            justify-content: center;
-            border-radius: 999px;
-            background: rgba(29, 78, 216, 0.10);
-            transform: rotate(0deg);
-            transition: transform 0.18s ease;
-        }
-
-        .presidio-raw-details[open] .presidio-raw-summary::before {
-            transform: rotate(90deg);
-        }
-
-        .presidio-raw-code {
-            margin-top: 8px;
-            max-width: 100%;
-            max-height: 280px;
-            white-space: pre-wrap;
-            word-break: break-word;
-            overflow: auto;
         }
 
         .developer-trace {
@@ -1069,10 +909,6 @@
                 grid-template-columns: 1fr;
             }
 
-            .presidio-layout {
-                grid-template-columns: 1fr;
-            }
-
             .rm-summary-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
@@ -1136,11 +972,13 @@
             <div class="flow-label">Flow</div>
             <div class="flow-track">
                 <div class="flow-step" data-flow="input">Input</div>
+                <div class="flow-step" data-flow="presidioInput">PII Discovery</div>
                 <div class="flow-step" data-flow="mask">Masking</div>
                 <div class="flow-step" data-flow="cloud">Databricks Score</div>
                 <div class="flow-step" data-flow="decision">Decision Payload</div>
                 <div class="flow-step" data-flow="decisionResult">Decision Response</div>
                 <div class="flow-step" data-flow="tokenization">Tokenization</div>
+                <div class="flow-step" data-flow="presidioLlm">PII Pre-flight</div>
                 <div class="flow-step" data-flow="llmRequest">LLM Request</div>
                 <div class="flow-step" data-flow="llmResponse">LLM Response</div>
                 <div class="flow-step" data-flow="rm">RM Workbench</div>
@@ -1170,19 +1008,33 @@
                     </div>
                 </details>
 
-                <details id="trace-mask" class="trace-item">
-                    <summary>Step 1 · Masked Transaction</summary>
+                <details id="trace-input-presidio" class="trace-item">
+                    <summary>Step 1 · Presidio PII Discovery</summary>
                     <div class="trace-body">
-                        <div id="trace-mask-diff"></div>
-                        <pre id="trace-mask-json" class="code-block code-block-tall"></pre>
+                        <div style="font-size:0.82rem; color: var(--ink-soft);">
+                            Presidio scans the actual demo transaction text on-prem before deterministic masking.
+                        </div>
+                        <div id="trace-input-presidio-entities" class="entity-list"></div>
+                        <pre id="trace-input-presidio-json" class="code-block code-block-tall"></pre>
                         <div class="manual-controls manual-only">
                             <button class="btn btn-ghost btn-mini manual-step" data-step="2">Next step</button>
                         </div>
                     </div>
                 </details>
 
+                <details id="trace-mask" class="trace-item">
+                    <summary>Step 2 · Masked Transaction</summary>
+                    <div class="trace-body">
+                        <div id="trace-mask-diff"></div>
+                        <pre id="trace-mask-json" class="code-block code-block-tall"></pre>
+                        <div class="manual-controls manual-only">
+                            <button class="btn btn-ghost btn-mini manual-step" data-step="3">Next step</button>
+                        </div>
+                    </div>
+                </details>
+
                 <details id="trace-cloud" class="trace-item">
-                    <summary>Step 2 · Databricks Cloud Payload + Result</summary>
+                    <summary>Step 3 · Databricks Cloud Payload + Result</summary>
                     <div class="trace-body">
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
                             <button class="btn btn-secondary btn-mini" data-copy="cloud-payload">Copy payload</button>
@@ -1191,34 +1043,34 @@
                         <pre id="trace-cloud-payload" class="code-block"></pre>
                         <pre id="trace-cloud-result" class="code-block"></pre>
                         <div class="manual-controls manual-only">
-                            <button class="btn btn-ghost btn-mini manual-step" data-step="3">Next step</button>
-                        </div>
-                    </div>
-                </details>
-
-                <details id="trace-decision" class="trace-item">
-                    <summary>Step 3 · Decision Engine Payload</summary>
-                    <div class="trace-body">
-                        <button class="btn btn-secondary btn-mini" data-copy="decision-payload">Copy payload</button>
-                        <pre id="trace-decision-payload" class="code-block code-block-tall"></pre>
-                        <div class="manual-controls manual-only">
                             <button class="btn btn-ghost btn-mini manual-step" data-step="4">Next step</button>
                         </div>
                     </div>
                 </details>
 
-                <details id="trace-decision-result" class="trace-item">
-                    <summary>Step 4 · Decision Engine Response</summary>
+                <details id="trace-decision" class="trace-item">
+                    <summary>Step 4 · Decision Engine Payload</summary>
                     <div class="trace-body">
-                        <pre id="trace-decision-result-json" class="code-block code-block-tall"></pre>
+                        <button class="btn btn-secondary btn-mini" data-copy="decision-payload">Copy payload</button>
+                        <pre id="trace-decision-payload" class="code-block code-block-tall"></pre>
                         <div class="manual-controls manual-only">
                             <button class="btn btn-ghost btn-mini manual-step" data-step="5">Next step</button>
                         </div>
                     </div>
                 </details>
 
+                <details id="trace-decision-result" class="trace-item">
+                    <summary>Step 5 · Decision Engine Response</summary>
+                    <div class="trace-body">
+                        <pre id="trace-decision-result-json" class="code-block code-block-tall"></pre>
+                        <div class="manual-controls manual-only">
+                            <button class="btn btn-ghost btn-mini manual-step" data-step="6">Next step</button>
+                        </div>
+                    </div>
+                </details>
+
                 <details id="trace-tokenization" class="trace-item">
-                    <summary>Step 5 · PII Tokenization for LLM</summary>
+                    <summary>Step 6 · PII Tokenization for LLM</summary>
                     <div class="trace-body">
                         <div style="font-size:0.82rem; color: var(--ink-soft);">
                             PII values are converted into deterministic ENC tokens before the LLM request.
@@ -1226,13 +1078,28 @@
                         <div id="trace-tokenization-diff"></div>
                         <pre id="trace-tokenization-json" class="code-block code-block-tall"></pre>
                         <div class="manual-controls manual-only">
-                            <button class="btn btn-ghost btn-mini manual-step" data-step="6">Next step</button>
+                            <button class="btn btn-ghost btn-mini manual-step" data-step="7">Next step</button>
+                        </div>
+                    </div>
+                </details>
+
+                <details id="trace-presidio-llm" class="trace-item">
+                    <summary>Step 7 · Presidio LLM Pre-flight Scan</summary>
+                    <div class="trace-body">
+                        <div style="font-size:0.82rem; color: var(--ink-soft);">
+                            Presidio scans the actual masked LLM prompt before egress. Expected result: no plaintext PII candidates.
+                        </div>
+                        <span class="badge badge-ok" id="presidio-llm-badge">Awaiting scan</span>
+                        <div id="trace-presidio-llm-entities" class="entity-list"></div>
+                        <pre id="trace-presidio-llm-json" class="code-block code-block-tall"></pre>
+                        <div class="manual-controls manual-only">
+                            <button class="btn btn-ghost btn-mini manual-step" data-step="8">Next step</button>
                         </div>
                     </div>
                 </details>
 
                 <details id="trace-llm-request" class="trace-item">
-                    <summary>Step 6 · LLM Request (masked)</summary>
+                    <summary>Step 8 · LLM Request (masked)</summary>
                     <div class="trace-body">
                         <span class="badge badge-ok" id="llm-plaintext-badge">0 plaintext detected</span>
                         <div id="llm-request-preview" class="trace-preview"></div>
@@ -1240,26 +1107,26 @@
                         <button class="btn btn-secondary btn-mini" data-copy="llm-request">Copy masked request</button>
                         <pre id="llm-request-raw" class="code-block code-block-tall"></pre>
                         <div class="manual-controls manual-only">
-                            <button class="btn btn-ghost btn-mini manual-step" data-step="7">Next step</button>
+                            <button class="btn btn-ghost btn-mini manual-step" data-step="9">Next step</button>
                         </div>
                     </div>
                 </details>
 
                 <details id="trace-llm-response" class="trace-item">
-                    <summary>Step 7 · LLM Response (masked)</summary>
+                    <summary>Step 9 · LLM Response (masked)</summary>
                     <div class="trace-body">
                         <div id="llm-response-preview" class="trace-preview"></div>
                         <ul id="llm-actions" class="trace-actions"></ul>
                         <button class="btn btn-secondary btn-mini" data-copy="llm-response">Copy masked response</button>
                         <pre id="llm-response-raw" class="code-block code-block-wide"></pre>
                         <div class="manual-controls manual-only">
-                            <button class="btn btn-ghost btn-mini manual-step" data-step="8">Next step</button>
+                            <button class="btn btn-ghost btn-mini manual-step" data-step="10">Next step</button>
                         </div>
                     </div>
                 </details>
 
                 <details id="trace-rm" class="trace-item">
-                    <summary>Step 8 · RM Workbench (unmasked)</summary>
+                    <summary>Step 10 · RM Workbench (unmasked)</summary>
                     <div class="trace-body">
                         <pre id="trace-rm-text" class="code-block code-block-wide"></pre>
                     </div>
@@ -1344,55 +1211,6 @@
             </div>
         </section>
 
-        <section class="card presidio-card">
-            <div class="card-header">
-                <div>
-                    <h3 style="margin:0; font-size:1rem;">PII detection with Microsoft Presidio</h3>
-                    <p style="margin:4px 0 0; font-size:0.8rem; color: var(--ink-soft);">
-                        Synthetic text demo: detect entities, anonymize, or redact before downstream use.
-                    </p>
-                </div>
-                <span class="badge badge-info" id="presidio-status">Ready</span>
-            </div>
-
-            <div class="presidio-layout">
-                <div class="presidio-panel">
-                    <div class="presidio-panel-header">
-                        <h4 class="presidio-panel-title">Synthetic input</h4>
-                        <span class="presidio-mini-metric">Demo only</span>
-                    </div>
-                    <textarea id="presidio-input" class="presidio-input" spellcheck="false">Ahmed Al Mansoori lives in Doha. His email is ahmed.almansoori@example.qa, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.</textarea>
-                    <div class="presidio-actions">
-                        <button class="btn btn-primary btn-mini" data-presidio-action="analyze">Analyze PII</button>
-                        <button class="btn btn-secondary btn-mini" data-presidio-action="anonymize">Anonymize PII</button>
-                        <button class="btn btn-ghost btn-mini" data-presidio-action="redact">Redact PII</button>
-                    </div>
-                    <div class="presidio-warning">
-                        Automatic PII detection can miss some data. Validate on domain samples before using it in sensitive workflows.
-                    </div>
-                </div>
-
-                <div class="presidio-panel presidio-result">
-                    <div>
-                        <div class="presidio-panel-header">
-                            <h4 class="presidio-panel-title">Detected entities</h4>
-                            <span class="presidio-mini-metric" id="presidio-entity-count">0 found</span>
-                        </div>
-                        <div id="presidio-entities" class="entity-list" style="margin-top:8px;">No analysis yet.</div>
-                    </div>
-                    <div>
-                        <div class="presidio-panel-header">
-                            <h4 class="presidio-panel-title">Output</h4>
-                        </div>
-                        <div id="presidio-output" class="presidio-output">Run Analyze, Anonymize, or Redact.</div>
-                    </div>
-                    <details class="presidio-raw-details">
-                        <summary class="presidio-raw-summary">Show raw Presidio response</summary>
-                        <pre id="presidio-raw" class="code-block presidio-raw-code"></pre>
-                    </details>
-                </div>
-            </div>
-        </section>
     </div>
 
     <div id="toast" class="toast"></div>
@@ -1402,9 +1220,9 @@
             "transaction_id": "TXN-20260120-000001",
             "transaction_ts": "2026-01-20T10:15:30+03:00",
             "customer_id": "CUST-QA-00987234",
-            "full_name": "Ahmed Al Mansoori",
+            "full_name": "John Smith",
             "phone": "+974 5512 3456",
-            "email": "ahmed.almansoori@example.qa",
+            "email": "john.smith@example.com",
             "billing_address": "QA, Doha, West Bay, Diplomatic Area, Street 805, Building 12, Apt 1503",
             "card_pan": "4111111111111111",
             "card_expiry": "12/28",
@@ -1462,15 +1280,19 @@
             rmActions: document.getElementById('rm-actions'),
             rmNoteToggle: document.getElementById('rm-note-toggle'),
             traceInput: document.getElementById('trace-input'),
+            traceInputPresidio: document.getElementById('trace-input-presidio'),
             traceMask: document.getElementById('trace-mask'),
             traceCloud: document.getElementById('trace-cloud'),
             traceDecision: document.getElementById('trace-decision'),
             traceDecisionResult: document.getElementById('trace-decision-result'),
             traceTokenization: document.getElementById('trace-tokenization'),
+            tracePresidioLlm: document.getElementById('trace-presidio-llm'),
             traceLlmRequest: document.getElementById('trace-llm-request'),
             traceLlmResponse: document.getElementById('trace-llm-response'),
             traceRm: document.getElementById('trace-rm'),
             traceInputJson: document.getElementById('trace-input-json'),
+            traceInputPresidioEntities: document.getElementById('trace-input-presidio-entities'),
+            traceInputPresidioJson: document.getElementById('trace-input-presidio-json'),
             traceMaskJson: document.getElementById('trace-mask-json'),
             traceMaskDiff: document.getElementById('trace-mask-diff'),
             traceCloudPayload: document.getElementById('trace-cloud-payload'),
@@ -1479,6 +1301,9 @@
             traceDecisionResultJson: document.getElementById('trace-decision-result-json'),
             traceTokenizationDiff: document.getElementById('trace-tokenization-diff'),
             traceTokenizationJson: document.getElementById('trace-tokenization-json'),
+            tracePresidioLlmEntities: document.getElementById('trace-presidio-llm-entities'),
+            tracePresidioLlmJson: document.getElementById('trace-presidio-llm-json'),
+            presidioLlmBadge: document.getElementById('presidio-llm-badge'),
             llmPlaintextBadge: document.getElementById('llm-plaintext-badge'),
             llmRequestPreview: document.getElementById('llm-request-preview'),
             llmTokenChips: document.getElementById('llm-token-chips'),
@@ -1487,12 +1312,6 @@
             llmActions: document.getElementById('llm-actions'),
             llmResponseRaw: document.getElementById('llm-response-raw'),
             traceRmText: document.getElementById('trace-rm-text'),
-            presidioInput: document.getElementById('presidio-input'),
-            presidioStatus: document.getElementById('presidio-status'),
-            presidioEntityCount: document.getElementById('presidio-entity-count'),
-            presidioEntities: document.getElementById('presidio-entities'),
-            presidioOutput: document.getElementById('presidio-output'),
-            presidioRaw: document.getElementById('presidio-raw'),
             toast: document.getElementById('toast')
         };
 
@@ -1511,22 +1330,26 @@
 
         const flowOrder = [
             'input',
+            'presidioInput',
             'mask',
             'cloud',
             'decision',
             'decisionResult',
             'tokenization',
+            'presidioLlm',
             'llmRequest',
             'llmResponse',
             'rm'
         ];
         const traceMap = {
             input: elements.traceInput,
+            presidioInput: elements.traceInputPresidio,
             mask: elements.traceMask,
             cloud: elements.traceCloud,
             decision: elements.traceDecision,
             decisionResult: elements.traceDecisionResult,
             tokenization: elements.traceTokenization,
+            presidioLlm: elements.tracePresidioLlm,
             llmRequest: elements.traceLlmRequest,
             llmResponse: elements.traceLlmResponse,
             rm: elements.traceRm
@@ -1534,11 +1357,13 @@
 
         const steps = [
             stepInitialJson,
+            stepPresidioInputDiscovery,
             stepMasking,
             stepCloudPipeline,
             stepDecisionEngine,
             stepDecisionResult,
             stepTokenization,
+            stepPresidioLlmPreflight,
             stepLLMRequest,
             stepLLMResponse,
             stepRMWorkbench
@@ -1769,16 +1594,10 @@
             target.innerHTML = renderHighlightedJson(data);
         }
 
-        function setPresidioStatus(text, kind) {
-            elements.presidioStatus.textContent = text;
-            elements.presidioStatus.className = `badge ${kind || 'badge-info'}`;
-        }
-
-        function renderPresidioEntities(entities) {
-            elements.presidioEntities.innerHTML = '';
-            elements.presidioEntityCount.textContent = `${entities ? entities.length : 0} found`;
+        function renderEntityList(container, entities) {
+            container.innerHTML = '';
             if (!entities || !entities.length) {
-                elements.presidioEntities.textContent = 'No entities detected.';
+                container.textContent = 'No entities detected.';
                 return;
             }
 
@@ -1795,57 +1614,8 @@
                 score.className = 'entity-score';
                 score.textContent = `${Math.round((entity.score || 0) * 100)}%`;
                 row.append(type, preview, score);
-                elements.presidioEntities.appendChild(row);
+                container.appendChild(row);
             });
-        }
-
-        async function runPresidioAction(action) {
-            const text = elements.presidioInput.value;
-            if (!text.trim()) {
-                setPresidioStatus('Input required', 'badge-warn');
-                elements.presidioOutput.textContent = 'Enter synthetic demo text first.';
-                return;
-            }
-
-            const endpoint = action === 'analyze'
-                ? '/pii/analyze'
-                : action === 'redact'
-                    ? '/pii/redact'
-                    : '/pii/anonymize';
-            const body = action === 'anonymize'
-                ? { text, language: 'en', mode: 'replace' }
-                : { text, language: 'en' };
-
-            setPresidioStatus('Running', 'badge-warn');
-            elements.presidioOutput.textContent = 'Processing...';
-            elements.presidioRaw.textContent = '';
-
-            try {
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.detail || 'Presidio request failed');
-                }
-
-                renderPresidioEntities(data.entities);
-                if (action === 'analyze') {
-                    elements.presidioOutput.textContent = `${data.entities.length} entities detected. Run anonymize or redact to transform the text.`;
-                } else if (action === 'redact') {
-                    elements.presidioOutput.textContent = data.redacted_text || '';
-                } else {
-                    elements.presidioOutput.textContent = data.anonymized_text || '';
-                }
-                renderJson(elements.presidioRaw, data);
-                setPresidioStatus('Completed', 'badge-ok');
-            } catch (error) {
-                renderPresidioEntities([]);
-                elements.presidioOutput.textContent = error.message || 'Presidio request failed.';
-                setPresidioStatus('Unavailable', 'badge-danger');
-            }
         }
 
         function renderDiff(original, masked) {
@@ -2188,6 +1958,37 @@
             renderJson(elements.traceTokenizationJson, tokenization);
         }
 
+        function renderPresidioInputDiscovery() {
+            const scan = demoState.artifacts.presidio_input_scan;
+            if (!scan) {
+                elements.traceInputPresidioEntities.textContent = 'No Presidio input scan artifact returned.';
+                elements.traceInputPresidioJson.textContent = '';
+                return;
+            }
+            renderEntityList(elements.traceInputPresidioEntities, scan.entities);
+            renderJson(elements.traceInputPresidioJson, scan);
+        }
+
+        function renderPresidioLlmPreflight() {
+            const scan = demoState.artifacts.presidio_llm_preflight_scan;
+            if (!scan) {
+                elements.tracePresidioLlmEntities.textContent = 'No Presidio LLM pre-flight artifact returned.';
+                elements.tracePresidioLlmJson.textContent = '';
+                elements.presidioLlmBadge.className = 'badge badge-warn';
+                elements.presidioLlmBadge.textContent = 'No scan artifact';
+                return;
+            }
+
+            renderEntityList(elements.tracePresidioLlmEntities, scan.entities);
+            renderJson(elements.tracePresidioLlmJson, scan);
+
+            const hasEntities = scan.entities && scan.entities.length > 0;
+            elements.presidioLlmBadge.className = hasEntities ? 'badge badge-danger' : 'badge badge-ok';
+            elements.presidioLlmBadge.textContent = hasEntities
+                ? `${scan.entities.length} PII candidates`
+                : '0 plaintext PII candidates';
+        }
+
         function renderLLMRequest() {
             const request = demoState.artifacts.llm_request_masked;
             elements.llmRequestPreview.innerHTML = highlightTokens(request.prompt);
@@ -2278,6 +2079,14 @@
             await sleep(demoState.speedMs);
         }
 
+        async function stepPresidioInputDiscovery() {
+            setStatus('Running · PII Discovery', 'processing');
+            setFlowActive('presidioInput');
+            setTraceActive('presidioInput');
+            renderPresidioInputDiscovery();
+            await sleep(demoState.speedMs);
+        }
+
         async function stepMasking() {
             setStatus('Running · Masking', 'processing');
             setFlowActive('mask');
@@ -2318,6 +2127,14 @@
             setFlowActive('tokenization');
             setTraceActive('tokenization');
             renderTokenization();
+            await sleep(demoState.speedMs);
+        }
+
+        async function stepPresidioLlmPreflight() {
+            setStatus('Running · PII Pre-flight', 'processing');
+            setFlowActive('presidioLlm');
+            setTraceActive('presidioLlm');
+            renderPresidioLlmPreflight();
             await sleep(demoState.speedMs);
         }
 
@@ -2452,6 +2269,8 @@
             elements.rmNote.textContent = 'Awaiting de-anonymized note.';
             elements.rmActions.innerHTML = '';
             elements.traceInputJson.textContent = '';
+            elements.traceInputPresidioEntities.textContent = '';
+            elements.traceInputPresidioJson.textContent = '';
             elements.traceMaskJson.textContent = '';
             elements.traceMaskDiff.innerHTML = '';
             elements.traceCloudPayload.textContent = '';
@@ -2460,6 +2279,10 @@
             elements.traceDecisionResultJson.textContent = '';
             elements.traceTokenizationDiff.innerHTML = '';
             elements.traceTokenizationJson.textContent = '';
+            elements.tracePresidioLlmEntities.textContent = '';
+            elements.tracePresidioLlmJson.textContent = '';
+            elements.presidioLlmBadge.className = 'badge badge-ok';
+            elements.presidioLlmBadge.textContent = 'Awaiting scan';
             elements.llmRequestPreview.textContent = '';
             elements.llmTokenChips.innerHTML = '';
             elements.llmRequestRaw.textContent = '';
@@ -2544,11 +2367,6 @@
             const stepButton = event.target.closest('[data-step]');
             if (stepButton) {
                 runToStep(Number(stepButton.dataset.step));
-                return;
-            }
-            const presidioAction = event.target.closest('[data-presidio-action]');
-            if (presidioAction) {
-                runPresidioAction(presidioAction.dataset.presidioAction);
                 return;
             }
             const copyTarget = event.target.closest('[data-copy]');

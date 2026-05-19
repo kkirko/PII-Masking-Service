@@ -13,6 +13,7 @@ Full Pipeline:
 """
 
 import logging
+import re
 from pathlib import Path
 from contextlib import asynccontextmanager
 from typing import Optional
@@ -42,6 +43,7 @@ from app.schemas import (
     PresidioAnalyzeResponse,
     PresidioAnonymizeResponse,
     PresidioRedactResponse,
+    PresidioScanArtifact,
     CloudFraudResult,
     LLMExplainPrompt,
     LLMExplainContext,
@@ -81,6 +83,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+ENC_TOKEN_PATTERN = re.compile(r"\[\[ENC\|v\d+\|[^|]+\|[A-Za-z0-9_-]+=*\]\]")
 
 # Static files directory
 STATIC_DIR = Path(__file__).parent / "static"
@@ -159,6 +162,69 @@ def _build_llm_request_masked(prompt: LLMExplainPrompt) -> LLMRequestMasked:
         tokens=tokens,
         reason_codes=prompt.reason_codes,
     )
+
+
+def _build_presidio_input_scan_text(
+    transaction: TransactionIn,
+    customer: Optional[CustomerIn],
+) -> str:
+    name = customer.full_name if customer else transaction.full_name
+    phone = customer.phone if customer else transaction.phone
+    email = customer.email if customer else transaction.email
+    address = customer.address if customer else transaction.billing_address
+
+    return (
+        f"Customer {name} initiated transaction {transaction.transaction_id}. "
+        f"Contact phone: {phone}. Email: {email}. "
+        f"Billing address: {address}. "
+        f"Card PAN: {transaction.card_pan}. "
+        f"Customer ID: {transaction.customer_id}. "
+        f"Merchant: {transaction.merchant_name}. "
+        f"Amount: {transaction.amount:.2f} {transaction.currency}."
+    )
+
+
+def _run_presidio_demo_scan(
+    label: str,
+    text: str,
+    include_scanned_text: bool = True,
+    ignore_enc_token_entities: bool = False,
+) -> PresidioScanArtifact:
+    try:
+        entities = presidio_analyze_text(text, "en")
+        if ignore_enc_token_entities:
+            token_spans = [(match.start(), match.end()) for match in ENC_TOKEN_PATTERN.finditer(text)]
+            entities = [
+                entity for entity in entities
+                if not any(entity["start"] < end and entity["end"] > start for start, end in token_spans)
+            ]
+        return PresidioScanArtifact(
+            label=label,
+            status="completed",
+            entities=entities,
+            entity_count=len(entities),
+            note="Presidio scan completed on-prem.",
+            scanned_text=text if include_scanned_text else None,
+        )
+    except PresidioUnavailableError as e:
+        return PresidioScanArtifact(
+            label=label,
+            status="unavailable",
+            entities=[],
+            entity_count=0,
+            note=f"Presidio unavailable: {e}",
+            scanned_text=text if include_scanned_text else None,
+        )
+    except Exception:
+        logger.exception("Presidio demo scan failed")
+        return PresidioScanArtifact(
+            label=label,
+            status="failed",
+            entities=[],
+            entity_count=0,
+            note="Presidio scan failed. Enforcement controls still ran.",
+            scanned_text=text if include_scanned_text else None,
+        )
 
 
 def _ensure_no_plaintext_in_llm_prompt(
@@ -770,6 +836,13 @@ async def demo_run(request: FraudExplainRequest):
     """Return all artifacts needed for UI playback in a single call."""
     original_txn = request.transaction
 
+    presidio_input_text = _build_presidio_input_scan_text(original_txn, request.customer)
+    presidio_input_scan = _run_presidio_demo_scan(
+        label="Input PII discovery",
+        text=presidio_input_text,
+        include_scanned_text=True,
+    )
+
     masked_with_id = mask_and_track(original_txn)
     masked_txn = masked_with_id.masked_transaction
     try:
@@ -795,6 +868,12 @@ async def demo_run(request: FraudExplainRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
     llm_request_masked = _build_llm_request_masked(llm_prompt)
+    presidio_llm_preflight_scan = _run_presidio_demo_scan(
+        label="LLM prompt pre-flight scan",
+        text=llm_request_masked.prompt,
+        include_scanned_text=True,
+        ignore_enc_token_entities=True,
+    )
     try:
         _ensure_no_plaintext_in_llm_prompt(llm_request_masked.prompt, original_txn, request.customer)
     except EgressViolation as e:
@@ -830,11 +909,13 @@ async def demo_run(request: FraudExplainRequest):
 
     return DemoRunResponse(
         original_transaction=original_txn,
+        presidio_input_scan=presidio_input_scan,
         masked_transaction_for_cloud=masked_txn,
         cloud_payload=cloud_payload,
         cloud_result=cloud_result,
         decision_engine_payload=decision_engine_payload,
         llm_request_masked=llm_request_masked,
+        presidio_llm_preflight_scan=presidio_llm_preflight_scan,
         llm_response_masked=llm_response_masked,
         llm_response_unmasked=llm_response_unmasked,
     )

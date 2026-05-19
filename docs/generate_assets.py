@@ -90,13 +90,13 @@ def plot_aead_determinism() -> None:
     ax.axis("off")
 
     ax.add_patch(Rectangle((0.05, 0.6), 0.35, 0.25, fill=False, linewidth=1.5))
-    ax.text(0.07, 0.74, "Plaintext: Ahmed\nAD: full_name", fontsize=9)
+    ax.text(0.07, 0.74, "Plaintext: John Smith\nAD: full_name", fontsize=9)
 
     ax.add_patch(Rectangle((0.6, 0.6), 0.35, 0.25, fill=False, linewidth=1.5))
     ax.text(0.62, 0.74, "Ciphertext C1\n(deterministic)", fontsize=9)
 
     ax.add_patch(Rectangle((0.05, 0.15), 0.35, 0.25, fill=False, linewidth=1.5))
-    ax.text(0.07, 0.29, "Plaintext: Ahmed\nAD: email", fontsize=9)
+    ax.text(0.07, 0.29, "Plaintext: John Smith\nAD: email", fontsize=9)
 
     ax.add_patch(Rectangle((0.6, 0.15), 0.35, 0.25, fill=False, linewidth=1.5))
     ax.text(0.62, 0.29, "Ciphertext C2\n(different AD)", fontsize=9)
