@@ -24,6 +24,28 @@ These are runtime controls (not just documentation):
 - **Safe logging** redacts/hashes sensitive fields so plaintext PII/PCI is never written to logs.
 - **Feature flags for unmasking** keep plaintext output opt-in (`ENABLE_UNMASK`, `ENABLE_UNMASK_TEXT`).
 
+## Microsoft Presidio Layer
+
+The service now includes Microsoft Presidio as a text PII layer for synthetic/demo text:
+
+- **Analyzer**: detects entities such as `PERSON`, `EMAIL_ADDRESS`, `PHONE_NUMBER`, `CREDIT_CARD`, and `LOCATION`.
+- **Anonymizer**: replaces detected values with placeholders such as `<EMAIL_ADDRESS>` or `<PHONE_NUMBER>`.
+- **Redactor**: removes detected PII from the text.
+- **Custom recognizers**: project IDs such as `CUSTOMER_ID` (`CUST-123456`) and `CASE_ID` (`CASE-2026-0001`) are detected with regex recognizers.
+
+Synthetic demo text:
+
+```text
+John Smith lives in Doha. His email is john.smith@example.com, phone is +974 5555 1234, card is 4111 1111 1111 1111, customer id is CUST-123456.
+```
+
+Operational notes:
+
+- Presidio is a detection aid, not a guarantee. Sensitive workflows still require domain validation.
+- Raw text is accepted only by on-prem API endpoints; do not log raw text.
+- The default English NLP model is `en_core_web_lg`.
+- Russian/local-language support should be added through custom recognizers and a dedicated NLP engine configuration.
+
 ## Architecture (One Slide)
 
 ```mermaid
@@ -275,6 +297,7 @@ source venv/bin/activate  # Linux/Mac
 
 # 3. Install dependencies
 pip install -r requirements.txt
+python -m spacy download en_core_web_lg
 
 # 4. Run service
 uvicorn app.main:app --reload
@@ -317,6 +340,43 @@ Response:
   "version": "v1",
   "unmask_enabled": true
 }
+```
+
+### `POST /pii/analyze`
+Detect PII entities in synthetic text with Microsoft Presidio.
+
+```bash
+curl -X POST http://localhost:8000/pii/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "John Smith email is john.smith@example.com and customer id is CUST-123456",
+    "language": "en"
+  }'
+```
+
+### `POST /pii/anonymize`
+Replace detected PII with safe placeholders.
+
+```bash
+curl -X POST http://localhost:8000/pii/anonymize \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "John Smith email is john.smith@example.com and phone is +974 5555 1234",
+    "language": "en",
+    "mode": "replace"
+  }'
+```
+
+### `POST /pii/redact`
+Redact detected PII from synthetic text.
+
+```bash
+curl -X POST http://localhost:8000/pii/redact \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Customer CUST-123456 has email john.smith@example.com",
+    "language": "en"
+  }'
 ```
 
 ### `POST /v1/mask/transaction`
@@ -483,6 +543,9 @@ Environment variables (see `.env.example`):
 | `SCALE_CREDIT_LIMIT` | Scale factor for credit_limit | `1.11` |
 | `CAT_SEED` | Seed for categorical permutation | Derived from key |
 | `LOG_HASH_SALT` | Salt for safe logging | empty |
+| `PRESIDIO_SCORE_THRESHOLD` | Presidio analyzer score threshold | `0.35` |
+| `PRESIDIO_SPACY_MODEL` | spaCy model used by Presidio | `en_core_web_lg` |
+| `PRESIDIO_DEMO_INCLUDE_ORIGINAL` | Include original text in demo responses | `true` |
 
 ### Generate key
 
@@ -502,8 +565,12 @@ PII-Masking-Service/
 │   ├── masking.py       # Masking logic
 │   ├── classification.py # Data classification + policy enforcement
 │   ├── text_masking.py   # ENC tokens for LLM
+│   ├── presidio_service.py # Microsoft Presidio service layer
+│   ├── custom_recognizers.py # CUSTOMER_ID / CASE_ID recognizers
 │   ├── cloud_stub.py     # Stub cloud scoring
 │   └── llm_stub.py       # Stub LLM
+├── tests/
+│   └── test_presidio_service.py
 ├── requirements.txt
 ├── Dockerfile
 ├── .env.example
@@ -515,6 +582,9 @@ PII-Masking-Service/
 ## Testing
 
 ```bash
+# Unit tests
+pytest
+
 # Start service
 uvicorn app.main:app --reload &
 

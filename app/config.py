@@ -141,6 +141,13 @@ class Settings:
         # Optional salt for hashing in safe logs
         self.log_hash_salt: str = os.getenv("LOG_HASH_SALT", "")
 
+        # Microsoft Presidio configuration.
+        self.presidio_score_threshold: float = float(os.getenv("PRESIDIO_SCORE_THRESHOLD", "0.35"))
+        self.presidio_spacy_model: str = os.getenv("PRESIDIO_SPACY_MODEL", "en_core_web_lg")
+        self.presidio_demo_include_original: bool = os.getenv(
+            "PRESIDIO_DEMO_INCLUDE_ORIGINAL", "true"
+        ).lower() in ("true", "1", "yes")
+
 
 # Singleton settings instance
 settings = Settings()

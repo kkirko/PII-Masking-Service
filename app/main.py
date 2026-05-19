@@ -37,6 +37,11 @@ from app.schemas import (
     TextMaskResponse,
     TextUnmaskRequest,
     TextUnmaskResponse,
+    PresidioTextRequest,
+    PresidioAnonymizeRequest,
+    PresidioAnalyzeResponse,
+    PresidioAnonymizeResponse,
+    PresidioRedactResponse,
     CloudFraudResult,
     LLMExplainPrompt,
     LLMExplainContext,
@@ -62,6 +67,13 @@ from app.classification import validate_egress, EgressViolation
 from app.text_masking import mask_text, unmask_text, make_enc_token, TextMaskingError
 from app.cloud_stub import score_transaction
 from app.llm_stub import generate_explanation
+from app.presidio_service import (
+    PresidioUnavailableError,
+    analyze_text as presidio_analyze_text,
+    anonymize_text as presidio_anonymize_text,
+    mask_text as presidio_mask_text,
+    redact_text as presidio_redact_text,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -428,6 +440,81 @@ async def unmask_text_endpoint(request: TextUnmaskRequest):
     except Exception as e:
         logger.error(f"Error unmasking text: {e}")
         raise HTTPException(status_code=500, detail="Internal text unmasking error")
+
+
+# ============================================================
+# Microsoft Presidio Endpoints
+# ============================================================
+
+@app.post(
+    "/pii/analyze",
+    response_model=PresidioAnalyzeResponse,
+    tags=["Microsoft Presidio"],
+    summary="Detect PII entities in text with Microsoft Presidio",
+)
+async def pii_analyze_endpoint(request: PresidioTextRequest):
+    """Analyze synthetic/demo text and return detected entity metadata."""
+    try:
+        entities = presidio_analyze_text(request.text, request.language)
+        return PresidioAnalyzeResponse(entities=entities)
+    except PresidioUnavailableError as e:
+        logger.error(f"Presidio unavailable: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception("Presidio analysis failed")
+        raise HTTPException(status_code=500, detail="Internal Presidio analysis error")
+
+
+@app.post(
+    "/pii/anonymize",
+    response_model=PresidioAnonymizeResponse,
+    tags=["Microsoft Presidio"],
+    summary="Anonymize detected PII with Microsoft Presidio",
+)
+async def pii_anonymize_endpoint(request: PresidioAnonymizeRequest):
+    """Anonymize synthetic/demo text using replace or mask operators."""
+    mode = request.mode.lower().strip()
+    if mode not in ("replace", "mask"):
+        raise HTTPException(status_code=400, detail="mode must be 'replace' or 'mask'")
+
+    try:
+        result = (
+            presidio_mask_text(request.text, request.language)
+            if mode == "mask"
+            else presidio_anonymize_text(request.text, request.language)
+        )
+        return PresidioAnonymizeResponse(**result)
+    except PresidioUnavailableError as e:
+        logger.error(f"Presidio unavailable: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception("Presidio anonymization failed")
+        raise HTTPException(status_code=500, detail="Internal Presidio anonymization error")
+
+
+@app.post(
+    "/pii/redact",
+    response_model=PresidioRedactResponse,
+    tags=["Microsoft Presidio"],
+    summary="Redact detected PII with Microsoft Presidio",
+)
+async def pii_redact_endpoint(request: PresidioTextRequest):
+    """Redact detected PII entities from synthetic/demo text."""
+    try:
+        result = presidio_redact_text(request.text, request.language)
+        return PresidioRedactResponse(**result)
+    except PresidioUnavailableError as e:
+        logger.error(f"Presidio unavailable: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception("Presidio redaction failed")
+        raise HTTPException(status_code=500, detail="Internal Presidio redaction error")
 
 
 # ============================================================

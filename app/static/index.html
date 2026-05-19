@@ -543,6 +543,111 @@
             font-size: 0.85rem;
         }
 
+        .presidio-card {
+            margin-top: 14px;
+            padding: 18px;
+        }
+
+        .presidio-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+            gap: 16px;
+            margin-top: 14px;
+        }
+
+        .presidio-input {
+            width: 100%;
+            min-height: 132px;
+            resize: vertical;
+            border: 1px solid var(--line-strong);
+            border-radius: 16px;
+            padding: 12px 14px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.55;
+            color: var(--ink);
+            background: rgba(255, 255, 255, 0.82);
+            outline: none;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+        }
+
+        .presidio-input:focus {
+            border-color: rgba(29, 78, 216, 0.42);
+            box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.12);
+        }
+
+        .presidio-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .presidio-warning {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.22);
+            color: #92400e;
+            font-size: 0.78rem;
+            line-height: 1.45;
+        }
+
+        .presidio-result {
+            display: grid;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .presidio-output {
+            min-height: 72px;
+            padding: 12px;
+            border-radius: 14px;
+            background: rgba(15, 23, 42, 0.04);
+            border: 1px solid var(--line);
+            color: var(--ink);
+            font-size: 0.84rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .entity-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .entity-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            gap: 8px;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid var(--line);
+            font-size: 0.76rem;
+        }
+
+        .entity-type {
+            font-weight: 700;
+            color: #1d4ed8;
+        }
+
+        .entity-preview {
+            font-family: 'IBM Plex Mono', monospace;
+            color: #475569;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .entity-score {
+            color: #166534;
+            font-weight: 700;
+        }
+
         .developer-trace {
             margin-top: 18px;
             padding: 16px 18px;
@@ -862,6 +967,10 @@
                 grid-template-columns: 1fr;
             }
 
+            .presidio-layout {
+                grid-template-columns: 1fr;
+            }
+
             .rm-summary-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
@@ -1132,6 +1241,47 @@
                 </div>
             </div>
         </section>
+
+        <section class="card presidio-card">
+            <div class="card-header">
+                <div>
+                    <h3 style="margin:0; font-size:1rem;">PII detection with Microsoft Presidio</h3>
+                    <p style="margin:4px 0 0; font-size:0.8rem; color: var(--ink-soft);">
+                        Synthetic text demo: detect entities, anonymize, or redact before downstream use.
+                    </p>
+                </div>
+                <span class="badge badge-info" id="presidio-status">Ready</span>
+            </div>
+
+            <div class="presidio-layout">
+                <div>
+                    <textarea id="presidio-input" class="presidio-input" spellcheck="false">John Smith lives in Doha. His email is john.smith@example.com, phone is +974 5555 1234, card is 4111 1111 1111 1111, customer id is CUST-123456.</textarea>
+                    <div class="presidio-actions">
+                        <button class="btn btn-primary btn-mini" data-presidio-action="analyze">Analyze PII</button>
+                        <button class="btn btn-secondary btn-mini" data-presidio-action="anonymize">Anonymize PII</button>
+                        <button class="btn btn-ghost btn-mini" data-presidio-action="redact">Redact PII</button>
+                    </div>
+                    <div class="presidio-warning">
+                        Automatic PII detection can miss some data. Validate on domain samples before using it in sensitive workflows.
+                    </div>
+                </div>
+
+                <div class="presidio-result">
+                    <div>
+                        <div class="section-title">Detected entities</div>
+                        <div id="presidio-entities" class="entity-list" style="margin-top:8px;">No analysis yet.</div>
+                    </div>
+                    <div>
+                        <div class="section-title">Output</div>
+                        <div id="presidio-output" class="presidio-output">Run Analyze, Anonymize, or Redact.</div>
+                    </div>
+                    <details>
+                        <summary style="cursor:pointer; font-weight:600; color:#1d4ed8;">Show raw Presidio response</summary>
+                        <pre id="presidio-raw" class="code-block" style="margin-top:8px;"></pre>
+                    </details>
+                </div>
+            </div>
+        </section>
     </div>
 
     <div id="toast" class="toast"></div>
@@ -1226,6 +1376,11 @@
             llmActions: document.getElementById('llm-actions'),
             llmResponseRaw: document.getElementById('llm-response-raw'),
             traceRmText: document.getElementById('trace-rm-text'),
+            presidioInput: document.getElementById('presidio-input'),
+            presidioStatus: document.getElementById('presidio-status'),
+            presidioEntities: document.getElementById('presidio-entities'),
+            presidioOutput: document.getElementById('presidio-output'),
+            presidioRaw: document.getElementById('presidio-raw'),
             toast: document.getElementById('toast')
         };
 
@@ -1500,6 +1655,84 @@
 
         function renderJson(target, data) {
             target.innerHTML = renderHighlightedJson(data);
+        }
+
+        function setPresidioStatus(text, kind) {
+            elements.presidioStatus.textContent = text;
+            elements.presidioStatus.className = `badge ${kind || 'badge-info'}`;
+        }
+
+        function renderPresidioEntities(entities) {
+            elements.presidioEntities.innerHTML = '';
+            if (!entities || !entities.length) {
+                elements.presidioEntities.textContent = 'No entities detected.';
+                return;
+            }
+
+            entities.forEach(entity => {
+                const row = document.createElement('div');
+                row.className = 'entity-row';
+                const type = document.createElement('div');
+                type.className = 'entity-type';
+                type.textContent = entity.entity_type;
+                const preview = document.createElement('div');
+                preview.className = 'entity-preview';
+                preview.textContent = entity.text_preview || `chars ${entity.start}-${entity.end}`;
+                const score = document.createElement('div');
+                score.className = 'entity-score';
+                score.textContent = `${Math.round((entity.score || 0) * 100)}%`;
+                row.append(type, preview, score);
+                elements.presidioEntities.appendChild(row);
+            });
+        }
+
+        async function runPresidioAction(action) {
+            const text = elements.presidioInput.value;
+            if (!text.trim()) {
+                setPresidioStatus('Input required', 'badge-warn');
+                elements.presidioOutput.textContent = 'Enter synthetic demo text first.';
+                return;
+            }
+
+            const endpoint = action === 'analyze'
+                ? '/pii/analyze'
+                : action === 'redact'
+                    ? '/pii/redact'
+                    : '/pii/anonymize';
+            const body = action === 'anonymize'
+                ? { text, language: 'en', mode: 'replace' }
+                : { text, language: 'en' };
+
+            setPresidioStatus('Running', 'badge-warn');
+            elements.presidioOutput.textContent = 'Processing...';
+            elements.presidioRaw.textContent = '';
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Presidio request failed');
+                }
+
+                renderPresidioEntities(data.entities);
+                if (action === 'analyze') {
+                    elements.presidioOutput.textContent = `${data.entities.length} entities detected. Run anonymize or redact to transform the text.`;
+                } else if (action === 'redact') {
+                    elements.presidioOutput.textContent = data.redacted_text || '';
+                } else {
+                    elements.presidioOutput.textContent = data.anonymized_text || '';
+                }
+                renderJson(elements.presidioRaw, data);
+                setPresidioStatus('Completed', 'badge-ok');
+            } catch (error) {
+                renderPresidioEntities([]);
+                elements.presidioOutput.textContent = error.message || 'Presidio request failed.';
+                setPresidioStatus('Unavailable', 'badge-danger');
+            }
         }
 
         function renderDiff(original, masked) {
@@ -2198,6 +2431,11 @@
             const stepButton = event.target.closest('[data-step]');
             if (stepButton) {
                 runToStep(Number(stepButton.dataset.step));
+                return;
+            }
+            const presidioAction = event.target.closest('[data-presidio-action]');
+            if (presidioAction) {
+                runPresidioAction(presidioAction.dataset.presidioAction);
                 return;
             }
             const copyTarget = event.target.closest('[data-copy]');

@@ -228,6 +228,51 @@ class TextUnmaskResponse(BaseModel):
     text: str = classified_field(..., classification=CLASS_PII)
 
 
+class PresidioTextRequest(BaseModel):
+    """Request for Presidio text analysis."""
+    text: str = classified_field(..., classification=CLASS_PII, description="Synthetic/demo text to inspect")
+    language: str = classified_field("en", classification=CLASS_INTERNAL, description="Presidio language code")
+
+
+class PresidioAnonymizeRequest(PresidioTextRequest):
+    """Request for Presidio anonymization."""
+    mode: str = classified_field(
+        "replace",
+        classification=CLASS_INTERNAL,
+        description="Anonymization mode: replace or mask. Use /pii/redact for redaction.",
+    )
+
+
+class PresidioEntity(BaseModel):
+    """Detected Presidio entity."""
+    entity_type: str = classified_field(..., classification=CLASS_INTERNAL)
+    start: int = classified_field(..., classification=CLASS_INTERNAL)
+    end: int = classified_field(..., classification=CLASS_INTERNAL)
+    score: float = classified_field(..., classification=CLASS_INTERNAL)
+    text_preview: Optional[str] = classified_field(None, classification=CLASS_PII)
+
+
+class PresidioAnalyzeResponse(BaseModel):
+    """Presidio analyzer response."""
+    entities: List[PresidioEntity] = classified_field(..., classification=CLASS_PII)
+
+
+class PresidioAnonymizeResponse(BaseModel):
+    """Presidio anonymization response."""
+    original_text: Optional[str] = classified_field(None, classification=CLASS_PII)
+    anonymized_text: str = classified_field(..., classification=CLASS_INTERNAL)
+    entities: List[PresidioEntity] = classified_field(..., classification=CLASS_PII)
+    operator_used: str = classified_field(..., classification=CLASS_INTERNAL)
+
+
+class PresidioRedactResponse(BaseModel):
+    """Presidio redaction response."""
+    original_text: Optional[str] = classified_field(None, classification=CLASS_PII)
+    redacted_text: str = classified_field(..., classification=CLASS_INTERNAL)
+    entities: List[PresidioEntity] = classified_field(..., classification=CLASS_PII)
+    operator_used: str = classified_field(..., classification=CLASS_INTERNAL)
+
+
 class HealthResponse(BaseModel):
     """Health check response."""
     status: str = classified_field("ok", classification=CLASS_PUBLIC)
