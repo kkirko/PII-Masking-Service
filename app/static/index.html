@@ -1014,6 +1014,7 @@
                         <div style="font-size:0.82rem; color: var(--ink-soft);">
                             Presidio scans the actual demo transaction text on-prem before deterministic masking.
                         </div>
+                        <span class="badge badge-info" id="input-presidio-badge">Awaiting scan</span>
                         <div id="trace-input-presidio-entities" class="entity-list"></div>
                         <pre id="trace-input-presidio-json" class="code-block code-block-tall"></pre>
                         <div class="manual-controls manual-only">
@@ -1089,7 +1090,7 @@
                         <div style="font-size:0.82rem; color: var(--ink-soft);">
                             Presidio scans the actual masked LLM prompt before egress. Expected result: no plaintext PII candidates.
                         </div>
-                        <span class="badge badge-ok" id="presidio-llm-badge">Awaiting scan</span>
+                        <span class="badge badge-info" id="presidio-llm-badge">Awaiting scan</span>
                         <div id="trace-presidio-llm-entities" class="entity-list"></div>
                         <pre id="trace-presidio-llm-json" class="code-block code-block-tall"></pre>
                         <div class="manual-controls manual-only">
@@ -1303,6 +1304,7 @@
             traceTokenizationJson: document.getElementById('trace-tokenization-json'),
             tracePresidioLlmEntities: document.getElementById('trace-presidio-llm-entities'),
             tracePresidioLlmJson: document.getElementById('trace-presidio-llm-json'),
+            presidioInputBadge: document.getElementById('input-presidio-badge'),
             presidioLlmBadge: document.getElementById('presidio-llm-badge'),
             llmPlaintextBadge: document.getElementById('llm-plaintext-badge'),
             llmRequestPreview: document.getElementById('llm-request-preview'),
@@ -1963,10 +1965,31 @@
             if (!scan) {
                 elements.traceInputPresidioEntities.textContent = 'No Presidio input scan artifact returned.';
                 elements.traceInputPresidioJson.textContent = '';
+                elements.presidioInputBadge.className = 'badge badge-warn';
+                elements.presidioInputBadge.textContent = 'No scan artifact';
                 return;
             }
             renderEntityList(elements.traceInputPresidioEntities, scan.entities);
             renderJson(elements.traceInputPresidioJson, scan);
+
+            if (scan.status === 'unavailable') {
+                elements.presidioInputBadge.className = 'badge badge-warn';
+                elements.presidioInputBadge.textContent = 'Presidio unavailable';
+                return;
+            }
+
+            if (scan.status === 'failed') {
+                elements.presidioInputBadge.className = 'badge badge-danger';
+                elements.presidioInputBadge.textContent = 'Presidio scan failed';
+                return;
+            }
+
+            elements.presidioInputBadge.className = scan.entities && scan.entities.length
+                ? 'badge badge-info'
+                : 'badge badge-ok';
+            elements.presidioInputBadge.textContent = scan.entities && scan.entities.length
+                ? `${scan.entities.length} PII candidates`
+                : 'No PII candidates';
         }
 
         function renderPresidioLlmPreflight() {
@@ -1981,6 +2004,18 @@
 
             renderEntityList(elements.tracePresidioLlmEntities, scan.entities);
             renderJson(elements.tracePresidioLlmJson, scan);
+
+            if (scan.status === 'unavailable') {
+                elements.presidioLlmBadge.className = 'badge badge-warn';
+                elements.presidioLlmBadge.textContent = 'Presidio unavailable';
+                return;
+            }
+
+            if (scan.status === 'failed') {
+                elements.presidioLlmBadge.className = 'badge badge-danger';
+                elements.presidioLlmBadge.textContent = 'Presidio scan failed';
+                return;
+            }
 
             const hasEntities = scan.entities && scan.entities.length > 0;
             elements.presidioLlmBadge.className = hasEntities ? 'badge badge-danger' : 'badge badge-ok';
@@ -2271,6 +2306,8 @@
             elements.traceInputJson.textContent = '';
             elements.traceInputPresidioEntities.textContent = '';
             elements.traceInputPresidioJson.textContent = '';
+            elements.presidioInputBadge.className = 'badge badge-info';
+            elements.presidioInputBadge.textContent = 'Awaiting scan';
             elements.traceMaskJson.textContent = '';
             elements.traceMaskDiff.innerHTML = '';
             elements.traceCloudPayload.textContent = '';
@@ -2281,7 +2318,7 @@
             elements.traceTokenizationJson.textContent = '';
             elements.tracePresidioLlmEntities.textContent = '';
             elements.tracePresidioLlmJson.textContent = '';
-            elements.presidioLlmBadge.className = 'badge badge-ok';
+            elements.presidioLlmBadge.className = 'badge badge-info';
             elements.presidioLlmBadge.textContent = 'Awaiting scan';
             elements.llmRequestPreview.textContent = '';
             elements.llmTokenChips.innerHTML = '';

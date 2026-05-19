@@ -190,6 +190,8 @@ def _run_presidio_demo_scan(
     include_scanned_text: bool = True,
     ignore_enc_token_entities: bool = False,
 ) -> PresidioScanArtifact:
+    scanned_text = text if include_scanned_text and settings.presidio_demo_include_original else None
+
     try:
         entities = presidio_analyze_text(text, "en")
         if ignore_enc_token_entities:
@@ -204,7 +206,7 @@ def _run_presidio_demo_scan(
             entities=entities,
             entity_count=len(entities),
             note="Presidio scan completed on-prem.",
-            scanned_text=text if include_scanned_text else None,
+            scanned_text=scanned_text,
         )
     except PresidioUnavailableError as e:
         return PresidioScanArtifact(
@@ -213,7 +215,7 @@ def _run_presidio_demo_scan(
             entities=[],
             entity_count=0,
             note=f"Presidio unavailable: {e}",
-            scanned_text=text if include_scanned_text else None,
+            scanned_text=scanned_text,
         )
     except Exception:
         logger.exception("Presidio demo scan failed")
@@ -223,7 +225,7 @@ def _run_presidio_demo_scan(
             entities=[],
             entity_count=0,
             note="Presidio scan failed. Enforcement controls still ran.",
-            scanned_text=text if include_scanned_text else None,
+            scanned_text=scanned_text,
         )
 
 

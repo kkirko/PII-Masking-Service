@@ -41,7 +41,7 @@ def _entity_to_dict(result: Any, text: str) -> dict[str, Any]:
         "start": result.start,
         "end": result.end,
         "score": round(float(result.score), 4),
-        "text_preview": text[result.start : result.end],
+        "text_preview": text[result.start : result.end] if settings.presidio_demo_include_original else None,
     }
 
 

@@ -32,6 +32,8 @@ These are runtime controls (not just documentation):
 
 The service includes Microsoft Presidio as an on-prem PII discovery and pre-flight scan layer inside the main demo playback. In `/v1/demo/run`, Presidio scans the actual demo transaction text before deterministic masking and scans the masked LLM prompt before egress. The standalone `/pii/*` endpoints remain available as developer references, but the executive demo shows Presidio as part of the same end-to-end flow.
 
+The interactive demo endpoint `/v1/demo/run` includes Presidio artifacts for reviewer visibility. Production endpoints should apply the same pre-flight pattern where required by policy.
+
 - **Analyzer**: detects candidate entities such as `PERSON`, `EMAIL_ADDRESS`, `PHONE_NUMBER`, `CREDIT_CARD`, and `LOCATION`.
 - **Anonymizer**: replaces detected values with placeholders such as `<EMAIL_ADDRESS>` or `<PHONE_NUMBER>`.
 - **Redactor**: removes detected PII from the text.
@@ -126,6 +128,20 @@ Expected candidate detections include:
 | `PHONE_NUMBER` | `+974 5512 3456` | Mask, replace, or encrypt |
 | `CREDIT_CARD` | `4111111111111111` | Treat as PCI and block plaintext egress |
 | `CUSTOMER_ID` | `CUST-QA-00987234` | Custom recognizer + deterministic tokenization |
+
+#### How to read `score`
+
+Presidio returns a `score` for each detected entity. Treat it as a recognizer confidence / strength signal, not as a legal certainty and not as a calibrated probability that the text is definitely PII.
+
+How this demo uses it:
+
+- `score` is returned together with `entity_type`, `start`, and `end`.
+- Results below `PRESIDIO_SCORE_THRESHOLD` are filtered out by the analyzer.
+- Regex/custom recognizers can assign fixed pattern strengths, for example the project `CUSTOMER_ID` recognizer uses a high score because the format is specific.
+- NLP-based recognizers, such as names or locations, can be less stable and should be validated on domain examples.
+- Higher score means “the recognizer is more confident,” but scores are not perfectly comparable across all entity types or recognizer families.
+
+For reviewers: Presidio score helps prioritize findings. It does not replace field classification, encryption, tokenization, egress validation, or human review for sensitive workflows.
 
 ```mermaid
 flowchart LR
@@ -287,7 +303,7 @@ $$
 Token format (the LLM must copy tokens as-is):
 `[[ENC|v1|<field_name>|<base64url_ciphertext>]]`
 
-Optional Presidio pre-flight scan: before the LLM request leaves on-prem, the prompt can be scanned for plaintext PII. If Presidio detects a candidate sensitive value, the request should be blocked or re-masked before egress.
+Optional Presidio pre-flight scan: before the LLM request leaves on-prem, the prompt can be scanned for plaintext PII. In this demo, Presidio pre-flight results are shown as an additional detection signal before LLM egress. The hard enforcement controls remain `_ensure_no_plaintext_in_llm_prompt()` and `validate_egress(...)`; in production, Presidio findings can also be configured to block or re-mask requests.
 
 ```mermaid
 flowchart LR
@@ -681,18 +697,32 @@ open http://localhost:8000/docs
 ## Demo checklist
 
 - [ ] Start service: `uvicorn app.main:app --reload`
-- [ ] Open Swagger UI: http://localhost:8000/docs
-- [ ] Show `/health` endpoint
-- [ ] Show `/v1/mask/transaction` with sample JSON
-- [ ] Highlight:
+- [ ] Open demo UI: http://localhost:8000/
+- [ ] Click **Run Demo**
+- [ ] Show integrated flow:
+  - Input
+  - PII Discovery
+  - Masking
+  - Databricks Score
+  - Decision Payload
+  - Decision Response
+  - Tokenization
+  - PII Pre-flight
+  - LLM Request
+  - LLM Response
+  - RM Workbench
+- [ ] In **PII Discovery**, show Presidio entity types, spans, and scores for the actual demo transaction text.
+- [ ] In **Masking**, highlight:
   - PII fields became base64url strings
   - Numbers changed (×scale)
   - MCC changed (permutation)
   - Channel changed (mapping)
   - `mask_version` added
-- [ ] Repeat request to show determinism
-- [ ] Show `/v1/unmask/transaction` — restoration
-- [ ] Run `demo_client.py` for automated demo
+- [ ] In **PII Pre-flight**, show that the actual masked LLM prompt has no plaintext PII candidates.
+- [ ] Show that LLM request contains ENC tokens only.
+- [ ] Show RM Workbench de-masking happens on-prem only.
+- [ ] Open Swagger UI: http://localhost:8000/docs
+- [ ] Optionally show `/pii/analyze`, `/pii/anonymize`, `/pii/redact` as developer reference endpoints.
 
 </details>
 
