@@ -41,7 +41,12 @@ ENV PATH=/home/appuser/.local/bin:$PATH
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     MASK_VERSION=v1 \
-    ENABLE_UNMASK=false
+    ENABLE_UNMASK=false \
+    PRESIDIO_SPACY_MODEL=en_core_web_lg
+
+# Microsoft Presidio default English NLP model.
+# For Russian/local-language support, add custom recognizers and NLP configuration.
+RUN python -m spacy download en_core_web_lg
 
 # Expose port
 EXPOSE 8000
