@@ -3,7 +3,7 @@
 On-prem privacy-by-design pipeline for fraud analytics and RM explainability:
 mask sensitive fields, score in the cloud on masked features, decide on-prem, and generate RM notes via an LLM without sending plaintext to the LLM.
 
-The pipeline can also use **Microsoft Presidio** as an on-prem PII discovery layer for unstructured text, operator notes, and LLM prompt drafts. Presidio helps identify candidate sensitive entities before masking, while this project's deterministic encryption, ENC tokenization, egress policy checks, and safe logging remain the enforcement controls.
+The pipeline uses **Microsoft Presidio** as an on-prem PII discovery and pre-flight layer for derived transaction notes, operator-entered text, and LLM prompt drafts. Presidio helps identify candidate sensitive entities, while this project's deterministic encryption, ENC tokenization, egress policy checks, and safe logging remain the enforcement controls.
 
 
 ## Executive Summary
@@ -30,7 +30,7 @@ These are runtime controls (not just documentation):
 
 ## Microsoft Presidio Layer
 
-The service includes Microsoft Presidio endpoints as an on-prem text PII discovery and transformation layer for synthetic/demo text:
+The service includes Microsoft Presidio as an on-prem PII discovery and pre-flight scan layer inside the main demo playback. In `/v1/demo/run`, Presidio scans the actual demo transaction text before deterministic masking and scans the masked LLM prompt before egress. The standalone `/pii/*` endpoints remain available as developer references, but the executive demo shows Presidio as part of the same end-to-end flow.
 
 - **Analyzer**: detects candidate entities such as `PERSON`, `EMAIL_ADDRESS`, `PHONE_NUMBER`, `CREDIT_CARD`, and `LOCATION`.
 - **Anonymizer**: replaces detected values with placeholders such as `<EMAIL_ADDRESS>` or `<PHONE_NUMBER>`.
@@ -40,7 +40,7 @@ The service includes Microsoft Presidio endpoints as an on-prem text PII discove
 Synthetic demo text, aligned with the main transaction demo:
 
 ```text
-Ahmed Al Mansoori lives in Doha. His email is ahmed.almansoori@example.qa, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.
+John Smith lives in Doha. His email is john.smith@example.com, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.
 ```
 
 Operational notes:
@@ -64,7 +64,7 @@ flowchart LR
 
   subgraph OnPrem["On-Prem (Bank DC)"]
     Source["Source System<br/>Raw transaction JSON + notes<br/>(PII/PCI plaintext)"]:::onprem
-    Presidio["Microsoft Presidio<br/>PII discovery<br/>built-in + custom recognizers"]:::detect
+    Presidio["Microsoft Presidio<br/>PII discovery + LLM pre-flight<br/>built-in + custom recognizers"]:::detect
     Svc["PII Masking Service<br/>AES-SIV masking + ENC tokens<br/>policy checks + safe logging"]:::onprem
     Guard["Egress Guard<br/>block if plaintext PII/PCI remains"]:::block
     DE["Decision Engine<br/>(on-prem consumer)"]:::consumer
@@ -77,7 +77,7 @@ flowchart LR
   end
 
   Source -->|"Raw structured fields + free text"| Presidio
-  Presidio -->|"Detected entities + confidence"| Svc
+  Presidio -->|"Input scan + pre-flight scan artifacts"| Svc
   Source -->|"Schema-classified transaction fields"| Svc
   Svc -->|"Masked JSON / ENC-token prompt"| Guard
   Guard -->|"Cloud request: masked JSON only"| DBX
@@ -114,15 +114,15 @@ Presidio complements the schema-level classification already used by this demo:
 Example using the same synthetic data as the main demo:
 
 ```text
-Ahmed Al Mansoori lives in Doha. His email is ahmed.almansoori@example.qa, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.
+John Smith lives in Doha. His email is john.smith@example.com, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.
 ```
 
 Expected candidate detections include:
 
 | Entity | Example value | Follow-up control |
 |---|---|---|
-| `PERSON` | `Ahmed Al Mansoori` | Replace with ENC token or encrypted field value |
-| `EMAIL_ADDRESS` | `ahmed.almansoori@example.qa` | Replace with `<EMAIL_ADDRESS>` or ENC token |
+| `PERSON` | `John Smith` | Replace with ENC token or encrypted field value |
+| `EMAIL_ADDRESS` | `john.smith@example.com` | Replace with `<EMAIL_ADDRESS>` or ENC token |
 | `PHONE_NUMBER` | `+974 5512 3456` | Mask, replace, or encrypt |
 | `CREDIT_CARD` | `4111111111111111` | Treat as PCI and block plaintext egress |
 | `CUSTOMER_ID` | `CUST-QA-00987234` | Custom recognizer + deterministic tokenization |
@@ -134,10 +134,10 @@ flowchart LR
   classDef policy fill:#e8f3ff,stroke:#2563eb,stroke-width:1px,color:#0f172a;
   classDef output fill:#e9f8ef,stroke:#16a34a,stroke-width:1px,color:#0f172a;
 
-  A["Free text / notes / prompt draft<br/>Ahmed Al Mansoori, +974 5512 3456"]:::input --> B["Presidio Analyzer<br/>NER + regex + custom recognizers"]:::detect
+  A["Actual demo input<br/>John Smith, +974 5512 3456"]:::input --> B["Presidio Analyzer<br/>NER + regex + custom recognizers"]:::detect
   B --> C["Recognizer results<br/>entity_type, start, end, score"]:::detect
-  C --> D["Masking policy<br/>replace / mask / encrypt / block"]:::policy
-  D --> E["Masked text<br/>ENC tokens only for LLM"]:::output
+  C --> D["Masking policy<br/>encrypt / tokenize / block"]:::policy
+  D --> E["Masked payloads<br/>cloud-safe JSON + ENC tokens"]:::output
 ```
 
 > Limitation: Presidio is an automated detector, so it can miss some sensitive data. Use it together with schema controls, allow/deny lists, safe logging, egress validation, and testing on domain-specific examples.
@@ -171,8 +171,8 @@ Diagram (determinism + domain separation, AD includes the field name):
 flowchart LR
   classDef src fill:#f1f5f9,stroke:#64748b,stroke-width:1px,color:#0f172a;
   classDef tok fill:#e8f3ff,stroke:#2563eb,stroke-width:1px,color:#0f172a;
-  A("Value: Ahmed<br/>AD: full_name"):::src --> B("Token C1<br/>(deterministic)"):::tok
-  C("Value: Ahmed<br/>AD: email"):::src --> D("Token C2<br/>(different AD)"):::tok
+  A("Value: John Smith<br/>AD: full_name"):::src --> B("Token C1<br/>(deterministic)"):::tok
+  C("Value: John Smith<br/>AD: email"):::src --> D("Token C2<br/>(different AD)"):::tok
   B --> C
 
   linkStyle 2 stroke:transparent,fill:transparent,opacity:0;
@@ -319,8 +319,8 @@ sequenceDiagram
     participant LLM as "LLM (Cloud)"
     participant RM as "RM Workbench (On-Prem)"
 
-    Client->>Svc: Raw transaction JSON + notes (PII/PCI)
-    Svc->>Presidio: Analyze free text / notes / prompt drafts
+    Client->>Svc: Raw transaction JSON + derived note (PII/PCI)
+    Svc->>Presidio: Input PII discovery on actual demo payload
     Presidio-->>Svc: Candidate PII entities + confidence scores
 
     Svc->>Svc: Mask transaction (PII/PCI encryption, numeric scaling, categorical mapping)
@@ -333,7 +333,7 @@ sequenceDiagram
         Svc->>DE: Original + _fraud_scoring (on-prem only)
     and RM explainability (LLM-safe)
         Svc->>Svc: Build prompt with ENC tokens
-        Svc->>Presidio: Pre-flight scan LLM prompt
+        Svc->>Presidio: Pre-flight scan actual masked LLM prompt
         Presidio-->>Svc: No plaintext PII candidates
         Svc->>Guard: validate_egress(destination="llm")
         Guard-->>Svc: Approved: ENC tokens only
@@ -351,9 +351,12 @@ For the full step-by-step (aligned with the demo UI), see: `sequence.md`
 2. Open the demo UI: `http://localhost:8000/`
 3. Or open Swagger: `http://localhost:8000/docs`
 
-The visual demo should show Presidio as a **PII Discovery / Pre-flight Scan** capability before deterministic masking and before LLM egress. The important message for reviewers: Presidio helps discover candidate sensitive values, while encryption, tokenization, and egress validation enforce the actual no-plaintext-to-cloud guarantee.
+The visual demo now includes Presidio as two integrated playback steps:
 
-Use the same synthetic sample as the main demo. Do not use unrelated placeholder examples.
+1. **PII Discovery** immediately after Input and before deterministic masking.
+2. **PII Pre-flight** after tokenization and before LLM Request.
+
+The reviewer should see Presidio in the same sequence as masking, cloud scoring, Decision Engine payloads, LLM request, LLM response, and RM Workbench. Presidio helps discover candidate sensitive values; encryption, ENC tokenization, egress validation, and safe logging enforce the no-plaintext-to-cloud guarantee.
 
 <details>
 <summary><strong>Developer reference (setup, endpoints, configuration)</strong></summary>
@@ -425,7 +428,7 @@ Detect PII entities in synthetic text with Microsoft Presidio.
 curl -X POST http://localhost:8000/pii/analyze \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "Ahmed Al Mansoori lives in Doha. His email is ahmed.almansoori@example.qa, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.",
+    "text": "John Smith lives in Doha. His email is john.smith@example.com, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.",
     "language": "en"
   }'
 ```
@@ -437,7 +440,7 @@ Replace detected PII with safe placeholders.
 curl -X POST http://localhost:8000/pii/anonymize \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "Ahmed Al Mansoori lives in Doha. His email is ahmed.almansoori@example.qa, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.",
+    "text": "John Smith lives in Doha. His email is john.smith@example.com, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.",
     "language": "en",
     "mode": "replace"
   }'
@@ -450,7 +453,7 @@ Redact detected PII from synthetic text.
 curl -X POST http://localhost:8000/pii/redact \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "Ahmed Al Mansoori lives in Doha. His email is ahmed.almansoori@example.qa, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.",
+    "text": "John Smith lives in Doha. His email is john.smith@example.com, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.",
     "language": "en"
   }'
 ```
@@ -465,11 +468,12 @@ curl -X POST http://localhost:8000/v1/mask/transaction \
     "transaction_id": "TXN-20260120-000001",
     "transaction_ts": "2026-01-20T10:15:30+03:00",
     "customer_id": "CUST-QA-00987234",
-    "full_name": "Ahmed Al Mansoori",
+    "full_name": "John Smith",
     "phone": "+974 5512 3456",
-    "email": "ahmed.almansoori@example.qa",
+    "email": "john.smith@example.com",
     "billing_address": "QA, Doha, West Bay, Diplomatic Area, Street 805, Building 12, Apt 1503",
     "card_pan": "4111111111111111",
+    "card_expiry": "12/28",
     "merchant_id": "MRC-QA-778812",
     "merchant_name": "CARREFOUR CITY CENTER DOHA",
     "mcc": 5411,
@@ -531,9 +535,9 @@ curl -X POST http://localhost:8000/v1/mask/customer \
   -H "Content-Type: application/json" \
   -d '{
     "customer_id": "CUST-QA-00987234",
-    "full_name": "Ahmed Al Mansoori",
+    "full_name": "John Smith",
     "phone": "+974 5512 3456",
-    "email": "ahmed.almansoori@example.qa",
+    "email": "john.smith@example.com",
     "address": "QA, Doha, West Bay, Diplomatic Area, Street 805, Building 12, Apt 1503",
     "kyc_segment": "GOLD",
     "preferred_language": "EN"
@@ -547,9 +551,9 @@ Replace sensitive values with ENC tokens.
 curl -X POST http://localhost:8000/v1/mask/text \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "Call Ahmed about 275.50 QAR at CARREFOUR",
+    "text": "Call John about 275.50 QAR at CARREFOUR",
     "replacements": {
-      "customer_name": "Ahmed",
+      "customer_name": "John",
       "amount": "275.50",
       "merchant_name": "CARREFOUR"
     }

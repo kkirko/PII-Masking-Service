@@ -14,9 +14,11 @@ CLASS_PII = "PII"
 CLASS_PCI = "PCI"
 
 
-def classified_field(default, *, classification: str, **kwargs):
+def classified_field(default=..., *, classification: str, **kwargs):
     extra = kwargs.pop("json_schema_extra", {})
     extra = {**extra, "classification": classification}
+    if "default_factory" in kwargs:
+        return Field(json_schema_extra=extra, **kwargs)
     return Field(default, json_schema_extra=extra, **kwargs)
 
 
@@ -83,9 +85,9 @@ class TransactionIn(BaseModel):
                 "transaction_id": "TXN-20260120-000001",
                 "transaction_ts": "2026-01-20T10:15:30+03:00",
                 "customer_id": "CUST-QA-00987234",
-                "full_name": "Ahmed Al Mansoori",
+                "full_name": "John Smith",
                 "phone": "+974 5512 3456",
-                "email": "ahmed.almansoori@example.qa",
+                "email": "john.smith@example.com",
                 "billing_address": "QA, Doha, West Bay, Diplomatic Area, Street 805, Building 12, Apt 1503",
                 "card_pan": "4111111111111111",
                 "card_expiry": "12/28",
@@ -233,6 +235,19 @@ class PresidioTextRequest(BaseModel):
     text: str = classified_field(..., classification=CLASS_PII, description="Synthetic/demo text to inspect")
     language: str = classified_field("en", classification=CLASS_INTERNAL, description="Presidio language code")
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "text": (
+                    "John Smith lives in Doha. His email is john.smith@example.com, "
+                    "phone is +974 5512 3456, card is 4111111111111111, "
+                    "and customer id is CUST-QA-00987234."
+                ),
+                "language": "en",
+            }
+        }
+    }
+
 
 class PresidioAnonymizeRequest(PresidioTextRequest):
     """Request for Presidio anonymization."""
@@ -241,6 +256,20 @@ class PresidioAnonymizeRequest(PresidioTextRequest):
         classification=CLASS_INTERNAL,
         description="Anonymization mode: replace or mask. Use /pii/redact for redaction.",
     )
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "text": (
+                    "John Smith lives in Doha. His email is john.smith@example.com, "
+                    "phone is +974 5512 3456, card is 4111111111111111, "
+                    "and customer id is CUST-QA-00987234."
+                ),
+                "language": "en",
+                "mode": "replace",
+            }
+        }
+    }
 
 
 class PresidioEntity(BaseModel):
@@ -271,6 +300,16 @@ class PresidioRedactResponse(BaseModel):
     redacted_text: str = classified_field(..., classification=CLASS_INTERNAL)
     entities: List[PresidioEntity] = classified_field(..., classification=CLASS_PII)
     operator_used: str = classified_field(..., classification=CLASS_INTERNAL)
+
+
+class PresidioScanArtifact(BaseModel):
+    """Presidio scan result used by the interactive demo flow."""
+    label: str = classified_field(..., classification=CLASS_INTERNAL)
+    status: str = classified_field(..., classification=CLASS_INTERNAL)
+    entities: List[PresidioEntity] = classified_field(default_factory=list, classification=CLASS_PII)
+    entity_count: int = classified_field(0, classification=CLASS_INTERNAL)
+    note: Optional[str] = classified_field(None, classification=CLASS_INTERNAL)
+    scanned_text: Optional[str] = classified_field(None, classification=CLASS_PII)
 
 
 class HealthResponse(BaseModel):
@@ -394,10 +433,12 @@ class FraudExplainResponse(BaseModel):
 class DemoRunResponse(BaseModel):
     """Aggregated artifacts for interactive UI playback."""
     original_transaction: TransactionIn = classified_field(..., classification=CLASS_PII)
+    presidio_input_scan: Optional[PresidioScanArtifact] = classified_field(None, classification=CLASS_PII)
     masked_transaction_for_cloud: TransactionOut = classified_field(..., classification=CLASS_PII)
     cloud_payload: CloudPredictionRequest = classified_field(..., classification=CLASS_CONFIDENTIAL)
     cloud_result: CloudFraudResult = classified_field(..., classification=CLASS_CONFIDENTIAL)
     decision_engine_payload: dict[str, Any] = classified_field(..., classification=CLASS_PII)
     llm_request_masked: LLMRequestMasked = classified_field(..., classification=CLASS_PII)
+    presidio_llm_preflight_scan: Optional[PresidioScanArtifact] = classified_field(None, classification=CLASS_PII)
     llm_response_masked: LLMExplainResultMasked = classified_field(..., classification=CLASS_PII)
     llm_response_unmasked: Optional[LLMExplainResultUnmasked] = classified_field(None, classification=CLASS_PII)
