@@ -3,6 +3,8 @@
 On-prem privacy-by-design pipeline for fraud analytics and RM explainability:
 mask sensitive fields, score in the cloud on masked features, decide on-prem, and generate RM notes via an LLM without sending plaintext to the LLM.
 
+The pipeline can also use **Microsoft Presidio** as an on-prem PII discovery layer for unstructured text, operator notes, and LLM prompt drafts. Presidio helps identify candidate sensitive entities before masking, while this project's deterministic encryption, ENC tokenization, egress policy checks, and safe logging remain the enforcement controls.
+
 
 ## Executive Summary
 
@@ -13,6 +15,7 @@ Key guarantees (as implemented in code):
 - **No plaintext sensitive values go to the LLM** (LLM sees deterministic `[[ENC|...]]` tokens only).
 - **De-masking happens on-prem only**, under explicit feature flags.
 - Deterministic transforms preserve **joinability** for modeling and analytics (same input, same output).
+- **Presidio-assisted PII discovery** can identify candidate entities in free text before masking. Domain schema classification remains authoritative for structured transaction fields, and egress validation remains the final leakage guard.
 
 ## Security & Governance (Why This Is Safe)
 
@@ -23,20 +26,21 @@ These are runtime controls (not just documentation):
 - **LLM prompt safety check** blocks accidental plaintext leakage in the prompt string (the LLM request must contain ENC tokens only).
 - **Safe logging** redacts/hashes sensitive fields so plaintext PII/PCI is never written to logs.
 - **Feature flags for unmasking** keep plaintext output opt-in (`ENABLE_UNMASK`, `ENABLE_UNMASK_TEXT`).
+- **Microsoft Presidio pre-flight detection** can run on-prem before cloud/LLM egress to detect plaintext PII in free-text payloads. Built-in and custom recognizers can flag names, emails, phone numbers, cards, locations, and project-specific IDs. Presidio findings are treated as an additional detection signal, not as the only protection control.
 
 ## Microsoft Presidio Layer
 
-The service now includes Microsoft Presidio as a text PII layer for synthetic/demo text:
+The service includes Microsoft Presidio endpoints as an on-prem text PII discovery and transformation layer for synthetic/demo text:
 
-- **Analyzer**: detects entities such as `PERSON`, `EMAIL_ADDRESS`, `PHONE_NUMBER`, `CREDIT_CARD`, and `LOCATION`.
+- **Analyzer**: detects candidate entities such as `PERSON`, `EMAIL_ADDRESS`, `PHONE_NUMBER`, `CREDIT_CARD`, and `LOCATION`.
 - **Anonymizer**: replaces detected values with placeholders such as `<EMAIL_ADDRESS>` or `<PHONE_NUMBER>`.
 - **Redactor**: removes detected PII from the text.
-- **Custom recognizers**: project IDs such as `CUSTOMER_ID` (`CUST-123456`) and `CASE_ID` (`CASE-2026-0001`) are detected with regex recognizers.
+- **Custom recognizers**: project IDs such as `CUSTOMER_ID` (`CUST-QA-00987234`) and `CASE_ID` (`CASE-2026-0001`) are detected with regex recognizers.
 
-Synthetic demo text:
+Synthetic demo text, aligned with the main transaction demo:
 
 ```text
-John Smith lives in Doha. His email is john.smith@example.com, phone is +974 5555 1234, card is 4111 1111 1111 1111, customer id is CUST-123456.
+Ahmed Al Mansoori lives in Doha. His email is ahmed.almansoori@example.qa, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.
 ```
 
 Operational notes:
@@ -52,13 +56,17 @@ Operational notes:
 %%{init: {"theme":"base","themeVariables":{"fontFamily":"ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial","primaryTextColor":"#0f172a","lineColor":"#64748b","noteBkgColor":"#f8fafc","noteTextColor":"#0f172a","primaryColor":"#ffffff","secondaryColor":"#f1f5f9","tertiaryColor":"#fff7ed"}}}%%
 flowchart LR
   classDef onprem fill:#e8f3ff,stroke:#2563eb,stroke-width:1.3px,color:#0f172a;
+  classDef detect fill:#ede9fe,stroke:#7c3aed,stroke-width:1.3px,color:#0f172a;
   classDef cloud fill:#fff7ed,stroke:#d97706,stroke-width:1.3px,color:#0f172a;
   classDef consumer fill:#e9f8ef,stroke:#16a34a,stroke-width:1.3px,color:#0f172a;
   classDef rm fill:#f3f4f6,stroke:#64748b,stroke-width:1.3px,color:#0f172a;
+  classDef block fill:#fee2e2,stroke:#dc2626,stroke-width:1.3px,color:#7f1d1d;
 
   subgraph OnPrem["On-Prem (Bank DC)"]
-    Source["Source System<br/>Raw transaction JSON<br/>(PII/PCI plaintext)"]:::onprem
-    Svc["PII Masking Service<br/>mask + policy checks"]:::onprem
+    Source["Source System<br/>Raw transaction JSON + notes<br/>(PII/PCI plaintext)"]:::onprem
+    Presidio["Microsoft Presidio<br/>PII discovery<br/>built-in + custom recognizers"]:::detect
+    Svc["PII Masking Service<br/>AES-SIV masking + ENC tokens<br/>policy checks + safe logging"]:::onprem
+    Guard["Egress Guard<br/>block if plaintext PII/PCI remains"]:::block
     DE["Decision Engine<br/>(on-prem consumer)"]:::consumer
     RM["RM Workbench<br/>(final plaintext view)"]:::rm
   end
@@ -68,13 +76,16 @@ flowchart LR
     LLM["LLM<br/>(ENC tokens only)"]:::cloud
   end
 
-  Source -->|"PII JSON (on-prem only)"| Svc
-  Svc -->|"Cloud request: masked JSON only"| DBX
+  Source -->|"Raw structured fields + free text"| Presidio
+  Presidio -->|"Detected entities + confidence"| Svc
+  Source -->|"Schema-classified transaction fields"| Svc
+  Svc -->|"Masked JSON / ENC-token prompt"| Guard
+  Guard -->|"Cloud request: masked JSON only"| DBX
   DBX -->|"Score + reasons + masked_customer_id"| Svc
 
   Svc -->|"Decision payload: original + _fraud_scoring"| DE
 
-  Svc -->|"LLM prompt: ENC tokens only"| LLM
+  Guard -->|"LLM prompt: ENC tokens only"| LLM
   LLM -->|"LLM response: tokens preserved"| Svc
   Svc -->|"unmask_text() on-prem only"| RM
 ```
@@ -88,6 +99,48 @@ flowchart LR
 | Decision Engine (on-prem) | Original + `_fraud_scoring` | Yes (on-prem only) | Final on-prem decisioning |
 
 ## Data Transformations (Deterministic and Reversible)
+
+### 0) PII Discovery: Microsoft Presidio
+
+Purpose: detect candidate PII in unstructured text before deterministic protection controls are applied.
+
+Presidio complements the schema-level classification already used by this demo:
+
+- structured transaction fields are protected by field-level rules and deterministic encryption;
+- free-text notes, LLM prompt drafts, and operator-entered text can be scanned by Presidio Analyzer;
+- project-specific identifiers such as `CUSTOMER_ID`, `CASE_ID`, transaction references, or internal ticket numbers can be added via custom recognizers;
+- Presidio results are used as an additional signal, while egress validation remains the final control.
+
+Example using the same synthetic data as the main demo:
+
+```text
+Ahmed Al Mansoori lives in Doha. His email is ahmed.almansoori@example.qa, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.
+```
+
+Expected candidate detections include:
+
+| Entity | Example value | Follow-up control |
+|---|---|---|
+| `PERSON` | `Ahmed Al Mansoori` | Replace with ENC token or encrypted field value |
+| `EMAIL_ADDRESS` | `ahmed.almansoori@example.qa` | Replace with `<EMAIL_ADDRESS>` or ENC token |
+| `PHONE_NUMBER` | `+974 5512 3456` | Mask, replace, or encrypt |
+| `CREDIT_CARD` | `4111111111111111` | Treat as PCI and block plaintext egress |
+| `CUSTOMER_ID` | `CUST-QA-00987234` | Custom recognizer + deterministic tokenization |
+
+```mermaid
+flowchart LR
+  classDef input fill:#f1f5f9,stroke:#64748b,stroke-width:1px,color:#0f172a;
+  classDef detect fill:#ede9fe,stroke:#7c3aed,stroke-width:1px,color:#0f172a;
+  classDef policy fill:#e8f3ff,stroke:#2563eb,stroke-width:1px,color:#0f172a;
+  classDef output fill:#e9f8ef,stroke:#16a34a,stroke-width:1px,color:#0f172a;
+
+  A["Free text / notes / prompt draft<br/>Ahmed Al Mansoori, +974 5512 3456"]:::input --> B["Presidio Analyzer<br/>NER + regex + custom recognizers"]:::detect
+  B --> C["Recognizer results<br/>entity_type, start, end, score"]:::detect
+  C --> D["Masking policy<br/>replace / mask / encrypt / block"]:::policy
+  D --> E["Masked text<br/>ENC tokens only for LLM"]:::output
+```
+
+> Limitation: Presidio is an automated detector, so it can miss some sensitive data. Use it together with schema controls, allow/deny lists, safe logging, egress validation, and testing on domain-specific examples.
 
 ### 1) PII/PCI: Deterministic Encryption (AES-256-SIV)
 
@@ -234,12 +287,21 @@ $$
 Token format (the LLM must copy tokens as-is):
 `[[ENC|v1|<field_name>|<base64url_ciphertext>]]`
 
+Optional Presidio pre-flight scan: before the LLM request leaves on-prem, the prompt can be scanned for plaintext PII. If Presidio detects a candidate sensitive value, the request should be blocked or re-masked before egress.
+
 ```mermaid
-%%{init: {"theme":"base","themeVariables":{"fontFamily":"ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial","primaryTextColor":"#0f172a","lineColor":"#64748b","primaryColor":"#ffffff","secondaryColor":"#f1f5f9"}}}%%
 flowchart LR
-  A["On-Prem<br/>make_enc_token() / mask_text()"] -->|"ENC tokens only"| B["LLM (Cloud)<br/>masked only"]
-  B -->|"Tokens preserved"| C["On-Prem<br/>unmask_text()"]
-  C --> D["RM Workbench<br/>(final plaintext view)"]
+  classDef onprem fill:#e8f3ff,stroke:#2563eb,stroke-width:1px,color:#0f172a;
+  classDef detect fill:#ede9fe,stroke:#7c3aed,stroke-width:1px,color:#0f172a;
+  classDef cloud fill:#fff7ed,stroke:#d97706,stroke-width:1px,color:#0f172a;
+  classDef block fill:#fee2e2,stroke:#dc2626,stroke-width:1px,color:#7f1d1d;
+  classDef rm fill:#f3f4f6,stroke:#64748b,stroke-width:1px,color:#0f172a;
+
+  A["On-Prem<br/>build LLM prompt"]:::onprem --> B["Presidio pre-flight scan<br/>detect plaintext PII"]:::detect
+  B -->|"No plaintext detected"| C["LLM request<br/>ENC tokens only"]:::onprem
+  B -->|"PII candidate found"| D["Block / re-mask<br/>no egress"]:::block
+  C --> E["LLM<br/>tokens preserved"]:::cloud
+  E --> F["On-Prem<br/>unmask_text() for RM"]:::rm
 ```
 
 ## End-to-End Sequence (Executive View)
@@ -250,21 +312,31 @@ sequenceDiagram
     autonumber
     actor Client as "Source System"
     participant Svc as "PII Masking Service (On-Prem)"
+    participant Presidio as "Microsoft Presidio (On-Prem)"
+    participant Guard as "Egress Guard"
     participant DBX as "Databricks Scoring (Cloud)"
     participant DE as "Decision Engine (On-Prem)"
     participant LLM as "LLM (Cloud)"
     participant RM as "RM Workbench (On-Prem)"
 
-    Client->>Svc: Raw transaction JSON (PII/PCI)
-    Svc->>Svc: Mask transaction (PII/cat/numeric)
-    Svc->>Svc: validate_egress(destination="cloud")
-    Svc->>DBX: CloudPredictionRequest (masked only)
+    Client->>Svc: Raw transaction JSON + notes (PII/PCI)
+    Svc->>Presidio: Analyze free text / notes / prompt drafts
+    Presidio-->>Svc: Candidate PII entities + confidence scores
+
+    Svc->>Svc: Mask transaction (PII/PCI encryption, numeric scaling, categorical mapping)
+    Svc->>Guard: validate_egress(destination="cloud")
+    Guard-->>Svc: Approved: masked payload only
+    Svc->>DBX: CloudPredictionRequest (masked features only)
     DBX-->>Svc: Score + reasons + masked_customer_id
 
     par On-Prem decisioning
         Svc->>DE: Original + _fraud_scoring (on-prem only)
     and RM explainability (LLM-safe)
-        Svc->>Svc: Build prompt (ENC tokens) + safety checks
+        Svc->>Svc: Build prompt with ENC tokens
+        Svc->>Presidio: Pre-flight scan LLM prompt
+        Presidio-->>Svc: No plaintext PII candidates
+        Svc->>Guard: validate_egress(destination="llm")
+        Guard-->>Svc: Approved: ENC tokens only
         Svc->>LLM: LLMRequestMasked (ENC tokens only)
         LLM-->>Svc: Explanation with tokens preserved
         Svc->>RM: unmask_text() on-prem only
@@ -278,6 +350,10 @@ For the full step-by-step (aligned with the demo UI), see: `sequence.md`
 1. Start the service: `uvicorn app.main:app --reload`
 2. Open the demo UI: `http://localhost:8000/`
 3. Or open Swagger: `http://localhost:8000/docs`
+
+The visual demo should show Presidio as a **PII Discovery / Pre-flight Scan** capability before deterministic masking and before LLM egress. The important message for reviewers: Presidio helps discover candidate sensitive values, while encryption, tokenization, and egress validation enforce the actual no-plaintext-to-cloud guarantee.
+
+Use the same synthetic sample as the main demo. Do not use unrelated placeholder examples.
 
 <details>
 <summary><strong>Developer reference (setup, endpoints, configuration)</strong></summary>
@@ -349,7 +425,7 @@ Detect PII entities in synthetic text with Microsoft Presidio.
 curl -X POST http://localhost:8000/pii/analyze \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "John Smith email is john.smith@example.com and customer id is CUST-123456",
+    "text": "Ahmed Al Mansoori lives in Doha. His email is ahmed.almansoori@example.qa, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.",
     "language": "en"
   }'
 ```
@@ -361,7 +437,7 @@ Replace detected PII with safe placeholders.
 curl -X POST http://localhost:8000/pii/anonymize \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "John Smith email is john.smith@example.com and phone is +974 5555 1234",
+    "text": "Ahmed Al Mansoori lives in Doha. His email is ahmed.almansoori@example.qa, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.",
     "language": "en",
     "mode": "replace"
   }'
@@ -374,7 +450,7 @@ Redact detected PII from synthetic text.
 curl -X POST http://localhost:8000/pii/redact \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "Customer CUST-123456 has email john.smith@example.com",
+    "text": "Ahmed Al Mansoori lives in Doha. His email is ahmed.almansoori@example.qa, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.",
     "language": "en"
   }'
 ```

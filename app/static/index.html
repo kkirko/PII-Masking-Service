@@ -546,18 +546,58 @@
         .presidio-card {
             margin-top: 14px;
             padding: 18px;
+            overflow: hidden;
         }
 
         .presidio-layout {
             display: grid;
-            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+            grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
             gap: 16px;
             margin-top: 14px;
+            align-items: stretch;
+        }
+
+        .presidio-panel {
+            min-width: 0;
+            padding: 14px;
+            border-radius: 18px;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.52));
+            border: 1px solid var(--line);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+        }
+
+        .presidio-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .presidio-panel-title {
+            margin: 0;
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
+        .presidio-mini-metric {
+            flex: 0 0 auto;
+            padding: 4px 9px;
+            border-radius: 999px;
+            background: rgba(29, 78, 216, 0.09);
+            color: #1d4ed8;
+            border: 1px solid rgba(29, 78, 216, 0.16);
+            font-size: 0.68rem;
+            font-weight: 800;
         }
 
         .presidio-input {
             width: 100%;
-            min-height: 132px;
+            min-height: 148px;
             resize: vertical;
             border: 1px solid var(--line-strong);
             border-radius: 16px;
@@ -569,6 +609,7 @@
             background: rgba(255, 255, 255, 0.82);
             outline: none;
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+            overflow-wrap: anywhere;
         }
 
         .presidio-input:focus {
@@ -596,31 +637,37 @@
 
         .presidio-result {
             display: grid;
-            gap: 10px;
+            grid-template-rows: auto auto minmax(0, 1fr);
+            gap: 12px;
             min-width: 0;
         }
 
         .presidio-output {
-            min-height: 72px;
+            min-height: 88px;
+            max-height: 170px;
             padding: 12px;
             border-radius: 14px;
-            background: rgba(15, 23, 42, 0.04);
+            background: rgba(255, 255, 255, 0.70);
             border: 1px solid var(--line);
             color: var(--ink);
             font-size: 0.84rem;
             line-height: 1.5;
             white-space: pre-wrap;
             overflow-wrap: anywhere;
+            overflow: auto;
         }
 
         .entity-list {
             display: grid;
             gap: 8px;
+            max-height: 255px;
+            overflow: auto;
+            padding-right: 2px;
         }
 
         .entity-row {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) auto auto;
+            grid-template-columns: minmax(130px, 0.7fr) minmax(0, 1fr) auto;
             gap: 8px;
             align-items: center;
             padding: 8px 10px;
@@ -628,11 +675,15 @@
             background: rgba(255, 255, 255, 0.72);
             border: 1px solid var(--line);
             font-size: 0.76rem;
+            min-width: 0;
         }
 
         .entity-type {
             font-weight: 700;
             color: #1d4ed8;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .entity-preview {
@@ -646,6 +697,57 @@
         .entity-score {
             color: #166534;
             font-weight: 700;
+            padding: 3px 7px;
+            border-radius: 999px;
+            background: rgba(22, 163, 74, 0.10);
+            border: 1px solid rgba(22, 163, 74, 0.18);
+            white-space: nowrap;
+        }
+
+        .presidio-raw-details {
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .presidio-raw-summary {
+            cursor: pointer;
+            font-weight: 700;
+            color: #1d4ed8;
+            list-style: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+        }
+
+        .presidio-raw-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .presidio-raw-summary::before {
+            content: '›';
+            display: inline-flex;
+            width: 20px;
+            height: 20px;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: rgba(29, 78, 216, 0.10);
+            transform: rotate(0deg);
+            transition: transform 0.18s ease;
+        }
+
+        .presidio-raw-details[open] .presidio-raw-summary::before {
+            transform: rotate(90deg);
+        }
+
+        .presidio-raw-code {
+            margin-top: 8px;
+            max-width: 100%;
+            max-height: 280px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow: auto;
         }
 
         .developer-trace {
@@ -1254,8 +1356,12 @@
             </div>
 
             <div class="presidio-layout">
-                <div>
-                    <textarea id="presidio-input" class="presidio-input" spellcheck="false">John Smith lives in Doha. His email is john.smith@example.com, phone is +974 5555 1234, card is 4111 1111 1111 1111, customer id is CUST-123456.</textarea>
+                <div class="presidio-panel">
+                    <div class="presidio-panel-header">
+                        <h4 class="presidio-panel-title">Synthetic input</h4>
+                        <span class="presidio-mini-metric">Demo only</span>
+                    </div>
+                    <textarea id="presidio-input" class="presidio-input" spellcheck="false">Ahmed Al Mansoori lives in Doha. His email is ahmed.almansoori@example.qa, phone is +974 5512 3456, card is 4111111111111111, and customer id is CUST-QA-00987234.</textarea>
                     <div class="presidio-actions">
                         <button class="btn btn-primary btn-mini" data-presidio-action="analyze">Analyze PII</button>
                         <button class="btn btn-secondary btn-mini" data-presidio-action="anonymize">Anonymize PII</button>
@@ -1266,18 +1372,23 @@
                     </div>
                 </div>
 
-                <div class="presidio-result">
+                <div class="presidio-panel presidio-result">
                     <div>
-                        <div class="section-title">Detected entities</div>
+                        <div class="presidio-panel-header">
+                            <h4 class="presidio-panel-title">Detected entities</h4>
+                            <span class="presidio-mini-metric" id="presidio-entity-count">0 found</span>
+                        </div>
                         <div id="presidio-entities" class="entity-list" style="margin-top:8px;">No analysis yet.</div>
                     </div>
                     <div>
-                        <div class="section-title">Output</div>
+                        <div class="presidio-panel-header">
+                            <h4 class="presidio-panel-title">Output</h4>
+                        </div>
                         <div id="presidio-output" class="presidio-output">Run Analyze, Anonymize, or Redact.</div>
                     </div>
-                    <details>
-                        <summary style="cursor:pointer; font-weight:600; color:#1d4ed8;">Show raw Presidio response</summary>
-                        <pre id="presidio-raw" class="code-block" style="margin-top:8px;"></pre>
+                    <details class="presidio-raw-details">
+                        <summary class="presidio-raw-summary">Show raw Presidio response</summary>
+                        <pre id="presidio-raw" class="code-block presidio-raw-code"></pre>
                     </details>
                 </div>
             </div>
@@ -1378,6 +1489,7 @@
             traceRmText: document.getElementById('trace-rm-text'),
             presidioInput: document.getElementById('presidio-input'),
             presidioStatus: document.getElementById('presidio-status'),
+            presidioEntityCount: document.getElementById('presidio-entity-count'),
             presidioEntities: document.getElementById('presidio-entities'),
             presidioOutput: document.getElementById('presidio-output'),
             presidioRaw: document.getElementById('presidio-raw'),
@@ -1664,6 +1776,7 @@
 
         function renderPresidioEntities(entities) {
             elements.presidioEntities.innerHTML = '';
+            elements.presidioEntityCount.textContent = `${entities ? entities.length : 0} found`;
             if (!entities || !entities.length) {
                 elements.presidioEntities.textContent = 'No entities detected.';
                 return;

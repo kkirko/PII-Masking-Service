@@ -13,7 +13,7 @@ def build_custom_recognizers():
         patterns=[
             Pattern(
                 name="customer_id_pattern",
-                regex=r"\bCUST-\d{6}\b",
+                regex=r"\bCUST(?:-[A-Z]{2})?-\d{6,8}\b",
                 score=0.85,
             )
         ],
